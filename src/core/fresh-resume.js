@@ -10,8 +10,10 @@ Definition of the FRESHResume class.
     , extend = require('../utils/extend')
     , validator = require('is-my-json-valid')
     , _ = require('underscore')
+    , __ = require('lodash')
     , PATH = require('path')
     , moment = require('moment')
+    , XML = require('xml-escape')
     , MD = require('marked')
     , CONVERTER = require('./convert')
     , JRSResume = require('./jrs-resume');
@@ -81,10 +83,88 @@ Definition of the FRESHResume class.
   };
 
   /**
+  Create a copy of this resume in which all string fields have been run through
+  a transformation function (such as a Markdown filter or XML encoder).
+  */
+  FreshResume.prototype.transformStrings = function( filters, transformer ) {
+
+    var that = this;
+    var ret = this.dupe();
+
+    // TODO: refactor recursion
+    function transformStringsInObject( obj ) {
+
+      if( !obj ) return;
+      if( moment.isMoment( obj ) ) return;
+
+      if( _.isArray( obj ) ) {
+        obj.forEach( function(elem, idx, ar) {
+          if( typeof elem === 'string' || elem instanceof String )
+            ar[idx] = transformer( null, elem );
+          else if (_.isObject(elem))
+            transformStringsInObject( elem );
+        });
+      }
+      else if (_.isObject( obj )) {
+        Object.keys( obj ).forEach(function(k) {
+          var sub = obj[k];
+          if( typeof sub === 'string' || sub instanceof String ) {
+            if( filters.length && _.contains(filters, k) )
+              return;
+            obj[k] = transformer( k, sub );
+          }
+          else if (_.isObject( sub ))
+            transformStringsInObject( sub );
+        });
+      }
+
+    }
+
+    Object.keys( ret ).forEach(function(member){
+      transformStringsInObject( ret[ member ] );
+    });
+
+    return ret;
+  };
+
+  /**
   Create a copy of this resume in which all fields have been interpreted as
   Markdown.
   */
   FreshResume.prototype.markdownify = function() {
+
+    function MDIN( txt ){
+      return MD(txt || '' ).replace(/^\s*<p>|<\/p>\s*$/gi, '');
+    }
+
+    function trx(key, val) {
+      if( key === 'summary' ) {
+        return MD(val);
+      }
+      return MDIN(val);
+    }
+
+    return this.transformStrings( ['skills','url','start','end','date'], trx );
+  };
+
+  /**
+  Create a copy of this resume in which all fields have been interpreted as
+  Markdown.
+  */
+  FreshResume.prototype.xmlify = function() {
+
+    function trx(key, val) {
+      return XML(val);
+    }
+
+    return this.transformStrings( [], trx );
+  };
+
+  /**
+  Create a copy of this resume in which all fields have been interpreted as
+  Markdown.
+  */
+  FreshResume.prototype.markdownify2 = function() {
 
     var that = this;
     var ret = this.dupe();
@@ -142,15 +222,12 @@ Definition of the FRESHResume class.
   };
 
   /**
-  Open and parse the specified JSON resume sheet. Merge the JSON object model
-  onto this Sheet instance with extend() and convert sheet dates to a safe &
+  Initialize the FreshResume from JSON data.
+  Open and parse the specified FRESH resume. Merge the JSON object model onto
+  this Sheet instance with extend() and convert sheet dates to a safe &
   consistent format. Then sort each section by startDate descending.
   */
-  FreshResume.prototype.parse = function( stringData, opts ) {
-
-    // Parse the incoming JSON representation
-    var rep = JSON.parse( stringData );
-
+  FreshResume.prototype.parseJSON = function( rep, opts ) {
     // Convert JSON Resume to FRESH if necessary
     if( rep.basics ) {
       rep = CONVERTER.toFRESH( rep );
@@ -178,6 +255,13 @@ Definition of the FRESHResume class.
   };
 
   /**
+  Initialize the the FreshResume from string data.
+  */
+  FreshResume.prototype.parse = function( stringData, opts ) {
+    return this.parseJSON( JSON.parse( stringData ), opts );
+  };
+
+  /**
   Return a unique list of all keywords across all skills.
   */
   FreshResume.prototype.keywords = function() {
@@ -186,15 +270,6 @@ Definition of the FRESHResume class.
       (flatSkills = this.skills.map(function(sk) { return sk.name;  }));
     return flatSkills;
   },
-
-  /**
-  Update the sheet's raw data. TODO: remove/refactor
-  */
-  FreshResume.prototype.updateData = function( str ) {
-    this.clear( false );
-    this.parse( str );
-    return this;
-  };
 
   /**
   Reset the sheet to an empty state.
@@ -299,7 +374,7 @@ Definition of the FRESHResume class.
   Validate the sheet against the FRESH Resume schema.
   */
   FreshResume.prototype.isValid = function( info ) {
-    var schemaObj = require('FRESCA');
+    var schemaObj = require('fresca');
     var validator = require('is-my-json-valid');
     var validate = validator( schemaObj, { // Note [1]
       formats: { date: /^\d{4}(?:-(?:0[0-9]{1}|1[0-2]{1})(?:-[0-9]{2})?)?$/ }
@@ -321,7 +396,8 @@ Definition of the FRESHResume class.
   sheets that have overlapping jobs.
   */
   FreshResume.prototype.duration = function() {
-    if( this.employment.history && this.employment.history.length ) {
+    var empHist = __.get(this, 'employment.history');
+    if( empHist && empHist.length ) {
       var firstJob = _.last( this.employment.history );
       var careerStart = firstJob.start ? firstJob.safe.start : '';
       if ((typeof careerStart === 'string' || careerStart instanceof String) &&
@@ -341,9 +417,9 @@ Definition of the FRESHResume class.
   */
   FreshResume.prototype.sort = function( ) {
 
-    this.employment.history && this.employment.history.sort( byDateDesc );
-    this.education.history && this.education.history.sort( byDateDesc );
-    this.service.history && this.service.history.sort( byDateDesc );
+    __.get(this, 'employment.history') && this.employment.history.sort( byDateDesc );
+    __.get(this, 'education.history') && this.education.history.sort( byDateDesc );
+    __.get(this, 'service.history') && this.service.history.sort( byDateDesc );
 
     // this.awards && this.awards.sort( function(a, b) {
     //   return( a.safeDate.isBefore(b.safeDate) ) ? 1

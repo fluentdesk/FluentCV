@@ -1,5 +1,8 @@
 FluentCV
 ========
+
+[![Build status][travis-image]][travis-url]
+
 *Create polished résumés and CVs in multiple formats from your command line or
 shell. Author in clean Markdown and JSON, export to Word, HTML, PDF, LaTeX,
 plain text, and other arbitrary formats. Fight the power, save trees. Compatible
@@ -7,8 +10,9 @@ with [FRESH][fresca] and [JRS][6] resumes.*
 
 ![](assets/resume-bouqet.png)
 
-FluentCV is a dev-friendly, local-only Swiss Army knife for resumes and CVs.
-Use it to:
+FluentCV is a dev-friendly, local-only Swiss Army knife for resumes and CVs. It
+is the corporate-friendly fork of [HackMyResume][hmr]&mdash;same tool, different
+name. Use it to:
 
 1. **Generate** HTML, Markdown, LaTeX, MS Word, PDF, plain text, JSON, XML,
 YAML, print, smoke signal, carrier pigeon, and other arbitrary-format resumes
@@ -29,6 +33,7 @@ or Windows.
 - Support for multiple input and output resumes.
 - Use from your command line or [desktop][7].
 - Free and open-source through the MIT license.
+- Updated daily.
 
 ## Install
 
@@ -39,8 +44,36 @@ Install FluentCV with NPM:
 ```
 
 Note: for PDF generation you'll need to install a copy of [wkhtmltopdf][3] for
-your platform. For LaTeX generation you'll need a valid LaTeX environment with
-access to `xelatex` and similar.
+your platform.
+
+## Installing Themes
+
+FluentCV supports both [FRESH][fresh-themes] and [JSON Resume][jrst]-style
+résumé themes.
+
+- FRESH themes currently come preinstalled with FluentCV.
+- JSON Resume themes can be installed from NPM, GitHub, or manually.
+
+To install a JSON Resume theme, just `cd` to the folder where you want to store
+your themes and run one of:
+
+```bash
+# Install with NPM
+npm install jsonresume-theme-[theme-name]
+
+# Install with GitHub
+git clone https://github.com/[user-or-org]/[repo-name]
+```
+
+Then when you're ready to generate your resume, just reference the location of
+the theme folder as you installed it:
+
+```bash
+fluentcv BUILD resume.json TO out/resume.all -t node_modules/jsonresume-theme-classy
+```
+
+Note: You can use install themes anywhere on your file system. You don't need a
+package.json or other NPM/Node infrastructure.
 
 ## Getting Started
 
@@ -95,24 +128,15 @@ Output Format | Ext | Notes
 ------------- | --- | -----
 HTML | .html | A standard HTML 5 + CSS resume format that can be viewed in a browser, deployed to a website, etc.
 Markdown | .md | A structured Markdown document that can be used as-is or used to generate HTML.
-LaTeX | .tex | A structured LaTeX document (or collection of documents).
-MS Word | .doc | A Microsoft Word office document.
-Adobe Acrobat (PDF) | .pdf | A binary PDF document driven by an HTML theme.
+LaTeX | .tex | A structured LaTeX document (or collection of documents) that can be processed with pdflatex, xelatex, and similar tools.
+MS Word | .doc | A Microsoft Word office document (XML-driven; WordProcessingML).
+Adobe Acrobat (PDF) | .pdf | A binary PDF document driven by an HTML theme (through wkhtmltopdf).
 plain text | .txt | A formatted plain text document appropriate for emails or copy-paste.
 JSON | .json | A JSON representation of the resume.
 YAML | .yml | A YAML representation of the resume.
 RTF | .rtf | Forthcoming.
 Textile | .textile | Forthcoming.
 image | .png, .bmp | Forthcoming.
-
-## Install
-
-FluentCV requires a recent version of [Node.js][4] and [NPM][5]. Then:
-
-1. Install the latest official [wkhtmltopdf][3] binary for your platform.
-2. Optionally install an updated LaTeX environment (LaTeX resumes only).
-2. Install **FluentCV** with `[sudo] npm install fluentcv -g`.
-3. You're ready to go.
 
 ## Use
 
@@ -129,19 +153,19 @@ theme (default to Modern). For example:
 
 ```bash
 # Generate all resume formats (HTML, PDF, DOC, TXT, YML, etc.)
-fluentcv build resume.json -o out/resume.all -t modern
+fluentcv BUILD resume.json -o out/resume.all -t modern
 
 # Generate a specific resume format
-fluentcv build resume.json TO out/resume.html
-fluentcv build resume.json TO out/resume.pdf
-fluentcv build resume.json TO out/resume.md
-fluentcv build resume.json TO out/resume.doc
-fluentcv build resume.json TO out/resume.json
-fluentcv build resume.json TO out/resume.txt
-fluentcv build resume.json TO out/resume.yml
+fluentcv BUILD resume.json TO out/resume.html
+fluentcv BUILD resume.json TO out/resume.pdf
+fluentcv BUILD resume.json TO out/resume.md
+fluentcv BUILD resume.json TO out/resume.doc
+fluentcv BUILD resume.json TO out/resume.json
+fluentcv BUILD resume.json TO out/resume.txt
+fluentcv BUILD resume.json TO out/resume.yml
 
 # Specify 2 inputs and 3 outputs
-fluentcv build in1.json in2.json TO out.html out.doc out.pdf
+fluentcv BUILD in1.json in2.json TO out.html out.doc out.pdf
 ```
 
 You should see something to the effect of:
@@ -168,8 +192,8 @@ For a predefined theme, include the theme name. For a custom theme, include the
 path to the custom theme's folder.
 
 ```bash
-fluentcv build resume.json -t modern
-fluentcv build resume.json -t ~/foo/bar/my-custom-theme/
+fluentcv BUILD resume.json TO out/rez.all -t modern
+fluentcv BUILD resume.json TO OUT.rez.all -t ~/foo/bar/my-custom-theme/
 ```
 
 As of v1.0.0, available predefined themes are `positive`, `modern`, `compact`,
@@ -182,7 +206,7 @@ most generic to most specific:
 
 ```bash
 # Merge specific.json onto base.json and generate all formats
-fluentcv build base.json specific.json -o resume.all
+fluentcv BUILD base.json specific.json TO resume.all
 ```
 
 This can be useful for overriding a base (generic) resume with information from
@@ -193,7 +217,7 @@ resume. Merging follows conventional [extend()][9]-style behavior and there's
 no arbitrary limit to how many resumes you can merge:
 
 ```bash
-fluentcv build in1.json in2.json in3.json in4.json TO out.html out.doc
+fluentcv BUILD in1.json in2.json in3.json in4.json TO out.html out.doc
 Reading JSON resume: in1.json
 Reading JSON resume: in2.json
 Reading JSON resume: in3.json
@@ -209,14 +233,7 @@ You can specify **multiple output targets** and FluentCV will build them:
 
 ```bash
 # Generate out1.doc, out1.pdf, and foo.txt from me.json.
-fluentcv build me.json -o out1.doc -o out1.pdf -o foo.txt
-```
-
-You can also omit the output file(s) and/or theme completely:
-
-```bash
-# Equivalent to "fluentcv resume.json resume.all -t modern"
-fluentcv build resume.json
+fluentcv BUILD me.json TO out1.doc out1.pdf foo.txt
 ```
 
 ### Using .all
@@ -226,7 +243,7 @@ formats for the given resume. For example, this...
 
 ```bash
 # Generate all resume formats (HTML, PDF, DOC, TXT, etc.)
-fluentcv build me.json -o out/resume.all
+fluentcv BUILD me.json TO out/resume.all
 ```
 
 ..tells FluentCV to read `me.json` and generate `out/resume.md`,
@@ -241,7 +258,7 @@ resumes, use the `validate` command:
 
 ```bash
 # Validate myresume.json against either the FRESH or JSON Resume schema.
-fluentcv validate resumeA.json resumeB.json
+fluentcv VALIDATE resumeA.json resumeB.json
 ```
 
 FluentCV will validate each specified resume in turn:
@@ -273,7 +290,7 @@ HTML-formatted resumes. To disable prettification, the `--nopretty` or `-n` flag
 can be used:
 
 ```bash
-fluentcv generate resume.json out.all --nopretty
+fluentcv BUILD resume.json out.all --nopretty
 ```
 
 ### Silent Mode
@@ -281,9 +298,15 @@ fluentcv generate resume.json out.all --nopretty
 Use `-s` or `--silent` to run in silent mode:
 
 ```bash
-fluentcv generate resume.json -o someFile.all -s
-fluentcv generate resume.json -o someFile.all --silent
+fluentcv BUILD resume.json -o someFile.all -s
+fluentcv BUILD resume.json -o someFile.all --silent
 ```
+
+## Contributing
+
+FluentCV is a community-driven free and open source project under the MIT
+License. Contributions are encouraged and we respond to all PRs and issues,
+usually within 24 hours. See [CONTRIBUTING.md][contribute] for details.
 
 ## License
 
@@ -302,3 +325,9 @@ MIT. Go crazy. See [LICENSE.md][1] for details.
 [fresh]: https://github.com/fluentdesk/FRESH
 [fresca]: https://github.com/fluentdesk/FRESCA
 [dry]: https://en.wikipedia.org/wiki/Don%27t_repeat_yourself
+[travis-image]: https://img.shields.io/travis/palomajs/paloma.svg?style=flat-square
+[travis-url]: https://travis-ci.org/fluentdesk/FluentCV
+[contribute]: CONTRIBUTING.md
+[fresh-themes]: https://github.com/fluentdesk/fresh-themes
+[jrst]: https://www.npmjs.com/search?q=jsonresume-theme
+[hmr]: https://github.com/hacksalot/hackmyresume

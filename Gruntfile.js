@@ -14,10 +14,10 @@ module.exports = function (grunt) {
         ui: 'bdd',
         reporter: 'spec'
       },
-      all: { src: ['tests/*.js'] }
+      all: { src: ['test/*.js'] }
     },
 
-    clean: ['tests/sandbox'],
+    clean: ['test/sandbox'],
 
     yuidoc: {
       compile: {
@@ -38,7 +38,7 @@ module.exports = function (grunt) {
         laxcomma: true,
         expr: true
       },
-      all: ['Gruntfile.js', 'src/**/*.js', 'test/**/*.js']
+      all: ['Gruntfile.js', 'src/**/*.js', 'test/*.js']
     }
 
   };
@@ -50,10 +50,10 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-clean');
 
-  grunt.registerTask('test', 'Test the FluentCV library.',
-    function( config ) { grunt.task.run( ['clean','simplemocha:all'] ); });
-  grunt.registerTask('document', 'Generate FluentCV library documentation.',
+  grunt.registerTask('test', 'Test the HackMyResume library.',
+    function( config ) { grunt.task.run( ['clean','jshint','simplemocha:all'] ); });
+  grunt.registerTask('document', 'Generate HackMyResume library documentation.',
     function( config ) { grunt.task.run( ['yuidoc'] ); });
-  grunt.registerTask('default', [ 'jshint', 'test', 'yuidoc' ]);
+  grunt.registerTask('default', [ 'test', 'yuidoc' ]);
 
 };
