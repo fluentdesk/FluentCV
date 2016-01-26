@@ -10,7 +10,7 @@ shell. Author in clean Markdown and JSON, export to Word, HTML, PDF, LaTeX,
 plain text, and other arbitrary formats. Fight the power, save trees. Compatible
 with [FRESH][fresca] and [JRS][6] resumes.*
 
-![](assets/resume-bouqet.png)
+![](assets/hackmyresume.cli.1.6.0.png)
 
 FluentCV is a dev-friendly, local-only Swiss Army knife for resumes and CVs. It
 is the corporate-friendly fork of [HackMyResume][hmr]&mdash;same tool, different
@@ -19,8 +19,10 @@ name. Use it to:
 1. **Generate** HTML, Markdown, LaTeX, MS Word, PDF, plain text, JSON, XML,
 YAML, print, smoke signal, carrier pigeon, and other arbitrary-format resumes
 and CVs, from a single source of truth&mdash;without violating DRY.
-2. **Convert** resumes between [FRESH][fresca] and [JSON Resume][6] formats.
-3. **Validate** resumes against either format.
+2. **Analyze** your resume for keyword density, gaps/overlaps, and other
+metrics.
+3. **Convert** resumes between [FRESH][fresca] and [JSON Resume][6] formats.
+4. **Validate** resumes against either format.
 
 FluentCV is built with Node.js and runs on recent versions of OS X, Linux,
 or Windows. View the [FAQ](FAQ.md).
@@ -49,13 +51,16 @@ Install the latest stable version of FluentCV with NPM:
 [sudo] npm install fluentcv -g
 ```
 
-Power users can install the latest bleeding-edge version (updated daily):
+## Installing PDF Support (optional)
 
-```bash
-[sudo] npm install hacksalot/hackmyresume#dev -g
-```
+FluentCV tries not to impose a specific PDF engine requirement on
+the user, but will instead work with whatever PDF engines you have installed.
 
-**For PDF generation**, you'll need to install a copy of [wkhtmltopdf][3] and/or PhantomJS for your platform.
+Currently, FluentCV's PDF generation requires either [Phantom.js][2] or
+[wkhtmltopdf][3] to be installed on your system and the `phantomjs` and/or
+`wkhtmltopdf` binaries to be accessible on your PATH. This is an optional
+requirement for users who care about PDF formats. If you don't care about PDF
+formats, skip this step.
 
 ## Installing Themes
 
@@ -97,7 +102,7 @@ Use it when you need to submit, upload, print, or email resumes in specific
 formats.
 
     ```bash
-    # fluentcv BUILD <INPUTS> TO <OUTPUTS> [-t THEME]
+    # fluentcv BUILD <INPUTS...> TO <OUTPUTS...> [-t THEME]
     fluentcv BUILD resume.json TO out/resume.all
     fluentcv BUILD r1.json r2.json TO out/rez.html out/rez.md foo/rez.all
     ```
@@ -105,7 +110,7 @@ formats.
 - **new** creates a new resume in FRESH or JSON Resume format.
 
     ```bash
-    # fluentcv NEW <OUTPUTS> [-f <FORMAT>]
+    # fluentcv NEW <OUTPUTS...> [-f <FORMAT>]
     fluentcv NEW resume.json
     fluentcv NEW resume.json -f fresh
     fluentcv NEW r1.json r2.json -f jrs
@@ -113,12 +118,18 @@ formats.
 
 - **analyze** inspects your resume for keywords, duration, and other metrics.
 
+    ```bash
+    # fluentcv ANALYZE <INPUTS...>
+    fluentcv ANALYZE resume.json
+    fluentcv ANALYZE r1.json r2.json
+    ```
+
 - **convert** converts your source resume between FRESH and JSON Resume
 formats. Use it to convert between the two formats to take advantage of tools
 and services.
 
     ```bash
-    # fluentcv CONVERT <INPUTS> TO <OUTPUTS>
+    # fluentcv CONVERT <INPUTS...> TO <OUTPUTS...>
     fluentcv CONVERT resume.json TO resume-jrs.json
     fluentcv CONVERT 1.json 2.json 3.json TO out/1.json out/2.json out/3.json
     ```
@@ -127,10 +138,21 @@ and services.
 Resume schema. Use it to make sure your resume data is sufficient and complete.
 
     ```bash
-    # fluentcv VALIDATE <INPUTS>
+    # fluentcv VALIDATE <INPUTS...>
     fluentcv VALIDATE resume.json
     fluentcv VALIDATE r1.json r2.json r3.json
     ```
+
+- **peek** echoes your resume or any field, property, or object path on your
+resume to standard output.
+
+    ```bash
+    # fluentcv PEEK <INPUTS...> [OBJECT-PATH]
+    fluentcv PEEK rez.json # Echo the whole resume
+    fluentcv PEEK rez.json info.brief # Echo the "info.brief" field
+    fluentcv PEEK rez.json employment.history[1] # Echo the 1st job
+    fluentcv PEEK rez.json rez2.json info.brief # Compare value
+    ```    
 
 ## Supported Output Formats
 
@@ -153,7 +175,7 @@ image | .png, .bmp | Forthcoming.
 ## Use
 
 Assuming you've got a JSON-formatted resume handy, generating resumes in
-different formats and combinations easy. Just run:
+different formats and combinations is easy. Just run:
 
 ```bash
 fluentcv BUILD <INPUTS> <OUTPUTS> [-t theme].
@@ -199,24 +221,36 @@ Generating YAML resume: out/resume.yml
 
 ### Applying a theme
 
-FluentCV can work with any FRESH or JSON Resume theme. To specify a theme
-when generating your resume, use the `-t` or `--theme` parameter:
+FluentCV can work with any FRESH or JSON Resume theme (the latter must be
+installed first). To specify a theme when generating your resume, use the `-t`
+or `--theme` parameter:
 
 ```bash
 fluentcv BUILD resume.json TO out/rez.all -t [theme]
 ```
 
-The `[theme]` parameter can be the name of a predefined theme or the path to any
+The `[theme]` parameter can be the name of a predefined theme OR the path to any
 FRESH or JSON Resume theme folder:
 
 ```bash
 fluentcv BUILD resume.json TO out/rez.all -t modern
 fluentcv BUILD resume.json TO OUT.rez.all -t ../some-folder/my-custom-theme/
-fluentcv BUILD resume.json TO OUT.rez.all -t npm_modules/jsonresume-theme-classy
+fluentcv BUILD resume.json TO OUT.rez.all -t node_modules/jsonresume-theme-classy
 ```
 
-As of v1.4.0, available predefined themes are `positive`, `modern`, `compact`,
-`minimist`, and `hello-world`.
+FRESH themes are currently pre-installed with FluentCV. JSON Resume themes
+can be installed prior to use:
+
+```bash
+# Install a JSON Resume theme into a local node_modules subfolder:
+npm install jsonresume-theme-[name]
+# Use it with FluentCV
+fluentcv build resume.json -t node_modules/jsonresume-theme-[name]
+```
+
+As of v1.6.0, available predefined FRESH themes are `positive`, `modern`,
+`compact`, `minimist`, and `hello-world`. For a list of JSON Resume themes,
+check the [NPM Registry](https://www.npmjs.com/search?q=jsonresume-theme).
 
 ### Merging resumes
 
@@ -269,6 +303,39 @@ fluentcv BUILD me.json TO out/resume.all
 `out/resume.doc`, `out/resume.html`, `out/resume.txt`, `out/resume.pdf`, and
 `out/resume.json`.
 
+### Building PDFs
+
+*Users who don't care about PDFs can turn off PDF generation across all themes
+and formats with the `--pdf none` switch.*
+
+FluentCV takes a unique approach to PDF generation. Instead of enforcing
+a specific PDF engine on users, FluentCV will attempt to work with whatever
+PDF engine you have installed through the engine's command-line interface (CLI).
+Currently that means one or both of...
+
+- [wkhtmltopdf][3]
+- [Phantom.js][3]
+
+..with support for other engines planned in the future. But for now, **one or
+both of these engines must be installed and accessible on your PATH in order to
+generate PDF resumes with FluentCV**. That means you should be able to
+invoke either of these tools directly from your shell or terminal without error:
+
+```bash
+wkhtmltopdf input.html output.pdf
+phantomjs script.js input.html output.pdf
+```
+
+Assuming you've installed one or both of these engines on your system, you can
+tell FluentCV which flavor of PDF generation to use via the `--pdf` option
+(`-p` for short):
+
+```bash
+fluentcv BUILD resume.json TO out.all --pdf phantom
+fluentcv BUILD resume.json TO out.all --pdf wkhtmltopdf
+fluentcv BUILD resume.json TO out.all --pdf none
+```
+
 ### Analyzing
 
 FluentCV can analyze your resume for keywords, employment gaps, and other
@@ -282,7 +349,7 @@ Depending on the FluentCV version, you should see output similar to:
 
 
 ```
-*** FluentCV v1.4.1 ***
+*** FluentCV v1.7.1 ***
 Reading resume: resume.json
 Analyzing FRESH resume: resume.json
 
@@ -378,7 +445,7 @@ fluentcv VALIDATE resumeA.json resumeB.json
 FluentCV will validate each specified resume in turn:
 
 ```bash
-*** FluentCV v0.9.0 ***
+*** FluentCV v1.7.1 ***
 Validating JSON resume: resumeA.json (INVALID)
 Validating JSON resume: resumeB.json (VALID)
 ```
@@ -397,10 +464,17 @@ where <INPUTS> is one or more resumes in FRESH or JSON Resume format, and
 the format (FRESH or JRS) of each input resume and convert it to the other
 format (JRS or FRESH).
 
-### External options
+### File-based Options
 
-Starting in v1.4.x you can pass options into FluentCV via an external options
-or ".hackmyrc" file.
+You can pass options into FluentCV via an external options or ".fluentrc"
+file with the `--options` or `-o` switch:
+
+```bash
+fluentcv BUILD resume.json -o path/to/options.json
+```
+
+The options file can contain any documented FluentCV option, including
+`theme`, `silent`, `debug`, `pdf`, `css`, and other settings.
 
 ```javascript
 {
@@ -411,6 +485,18 @@ or ".hackmyrc" file.
     "employment": "Work"
   }
 }
+```
+
+If a particular option is specified both on the command line and in an external
+options file, the explicit command-line option takes precedence.
+
+```bash
+# path/to/options.json specifes the POSITIVE theme
+# -t parameter specifies the COMPACT theme
+# The -t parameter wins.
+fluentcv BUILD resume.json -o path/to/options.json -t compact
+> Reading resume: resume.json
+> Applying COMPACT theme (7 formats)
 ```
 
 ### Prettifying
@@ -430,6 +516,16 @@ Use `-s` or `--silent` to run in silent mode:
 ```bash
 fluentcv BUILD resume.json -o someFile.all -s
 fluentcv BUILD resume.json -o someFile.all --silent
+```
+
+### Debug Mode
+
+Use `-d` or `--debug` to force FluentCV to emit a call stack when errors occur.
+In the future, this option will emit detailed error logging.
+
+```bash
+fluentcv BUILD resume.json -d
+fluentcv ANALYZE resume.json --debug
 ```
 
 ## Contributing
@@ -455,17 +551,12 @@ MIT. Go crazy. See [LICENSE.md][1] for details.
 [fresh]: https://github.com/fluentdesk/FRESH
 [fresca]: https://github.com/fluentdesk/FRESCA
 [dry]: https://en.wikipedia.org/wiki/Don%27t_repeat_yourself
-<<<<<<< HEAD
-[travis-image]: https://img.shields.io/travis/palomajs/paloma.svg?style=flat-square
-[travis-url]: https://travis-ci.org/fluentdesk/FluentCV
-=======
-[img-release]: https://img.shields.io/github/release/hacksalot/HackMyResume.svg?label=version
-[img-master]: https://img.shields.io/travis/hacksalot/HackMyResume/master.svg
-[img-dev]: https://img.shields.io/travis/hacksalot/HackMyResume/dev.svg?label=dev
-[travis-url-master]: https://travis-ci.org/hacksalot/HackMyResume?branch=master
-[travis-url-dev]: https://travis-ci.org/hacksalot/HackMyResume?branch=dev
-[latest-release]: https://github.com/hacksalot/HackMyResume/releases/latest
->>>>>>> hacksalot/master
+[img-release]: https://img.shields.io/github/release/fluentdesk/FluentCV.svg?label=version
+[img-master]: https://img.shields.io/travis/fluentdesk/FluentCV/master.svg
+[img-dev]: https://img.shields.io/travis/fluentdesk/FluentCV/dev.svg?label=dev
+[travis-url-master]: https://travis-ci.org/fluentdesk/FluentCV?branch=master
+[travis-url-dev]: https://travis-ci.org/fluentdesk/FluentCV?branch=dev
+[latest-release]: https://github.com/fluentdesk/FluentCV/releases/latest
 [contribute]: CONTRIBUTING.md
 [fresh-themes]: https://github.com/fluentdesk/fresh-themes
 [jrst]: https://www.npmjs.com/search?q=jsonresume-theme
