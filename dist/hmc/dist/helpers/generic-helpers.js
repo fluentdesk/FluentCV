@@ -118,7 +118,7 @@ Generic template helper definitions for HackMyResume / FluentCV.
           return void 0;
         }
       } else if (_.isObject(obj)) {
-        return (obj.history && obj.history.length) || (obj.sets && obj.sets.length ? options.fn(this) : void 0);
+        return ((obj.history && obj.history.length) || (obj.sets && obj.sets.length)) ? options.fn(this) : void 0;
       }
     },
 
@@ -306,17 +306,17 @@ Generic template helper definitions for HackMyResume / FluentCV.
     Generic template helper function to display a user-overridable section
     title for a FRESH resume theme. Use this in lieue of hard-coding section
     titles.
-    
+
     Usage:
-    
+
         {{sectionTitle "sectionName"}}
         {{sectionTitle "sectionName" "sectionTitle"}}
-    
+
     Example:
-    
+
         {{sectionTitle "Education"}}
         {{sectionTitle "Employment" "Project History"}}
-    
+
     @param sect_name The name of the section being title. Must be one of the
     top-level FRESH resume sections ("info", "education", "employment", etc.).
     @param sect_title The theme-specified section title. May be replaced by the
