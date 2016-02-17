@@ -1,5 +1,108 @@
 CHANGELOG
 =========
+## v1.8.0
+
+### Added
+
+- Updated `Awesome` theme to latest version of [Awesome-CV][acv].
+
+- Introduced new theme helpers: `pad`, `date`.
+
+### Fixed
+
+- Fixed an issue where the `Awesome` theme wouldn't correctly generate LaTeX
+outputs (#138).
+
+- Emit a line number for syntax errors around embedded newlines in JSON strings
+(#137).
+
+- Fix several PDF / PNG generation errors (#132, others).
+
+- Display a more helpful error message when attempting to generate a PDF or PNG
+on a machine where PhantomJS and/or wkhtmltopdf are either not installed or
+not path-accessible.
+
+- Fixed an issue that would cause long-running PDF/PNG generation to fail in
+certain environments.
+
+- Fixed an issue involving an unhelpful spawn-related exception (#136).
+
+### Internal
+
+- JSHint will no longer gripe at the use of `== null` and `!= null` in
+CoffeeScript transpilation.
+
+- Introduced [template-friendly Awesome-CV fork][awefork] to isolate template
+expansion logic & provide better durability for HackMyResume's `awesome` theme.
+
+- Fixed a couple temporary regressions (#139, #140) on the dev branch.
+
+- Additional tests.
+
+- Minor breaking HackMyResume API changes.
+
+## v1.7.4
+
+### Added
+
+- [Build instructions](https://github.com/hacksalot/HackMyResume/blob/master/BUILDING.md).
+
+### Changed
+
+- More precise date handling.
+
+### Fixed
+
+- Issue with incomplete PDF generation (#127).
+
+- Issue with building JSON Resume themes (#128).
+
+- Issue with generating `.json` output format by itself (#97).
+
+## v1.7.3
+
+### Fixed
+
+- Issue with generated PDFs being chopped off and displaying a mysterious sequence of numbers of unknown and possibly alien origin (#127).
+
+- Unsightly border on Modern:PDF.
+
+- Modern|Positive:PDF formats now correctly reference their PDF-specific CSS files.
+
+- `Incorrect helper use` warning in Positive:DOC.
+
+## v1.7.2
+
+### Changed
+
+- Interim release supporting FluentCV Desktop.
+
+### Internal
+
+- Moved [HackMyCore](https://github.com/hacksalot/HackMyCore) dependency to
+submodule.
+
+## v1.7.1
+
+### Changed
+
+- Caffeinate. CoffeeScript now used throughout
+[HackMyResume](https://github.com/hacksalot/HackMyResume) and
+[HackMyCore](https://github.com/hacksalot/HackMyCore); generated JavaScript
+lives in `/dist`.
+
+### Fixed
+
+- Issue with generating a single PDF with the `.pdf` extension (#99).
+
+## v1.7.0
+
+### Changed
+
+- [Internal] Relocated HMR processing code to the
+[HackMyCore](https://github.com/hacksalot/HackMyCore) project. Shouldn't affect
+normal use.
+
 ## v1.6.0
 
 ### Major Improvements
@@ -304,3 +407,5 @@ theme.
 [i111]: https://github.com/hacksalot/HackMyResume/issues/111
 [fresca]: https://github.com/fluentdesk/FRESCA
 [themes]: https://github.com/fluentdesk/fresh-themes
+[awefork]: https://github.com/fluentdesk/Awesome-CV
+[acv]: https://github.com/posquit0/Awesome-CV

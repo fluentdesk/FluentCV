@@ -6,17 +6,15 @@ Output routines for HackMyResume.
  */
 
 (function() {
-  var Class, EXTEND, FS, HANDLEBARS, HME, LO, M2C, OutputHandler, PATH, YAML, _, chalk, dbgStyle, pad, printf;
+  var EXTEND, FS, HANDLEBARS, HME, LO, M2C, OutputHandler, PATH, YAML, _, chalk, dbgStyle, pad, printf;
 
   chalk = require('chalk');
 
-  HME = require('../hmc/dist/core/event-codes');
+  HME = require('../core/event-codes');
 
   _ = require('underscore');
 
-  Class = require('../hmc/dist/utils/class.js');
-
-  M2C = require('../hmc/dist/utils/md2chalk.js');
+  M2C = require('../utils/md2chalk.js');
 
   PATH = require('path');
 
@@ -39,20 +37,27 @@ Output routines for HackMyResume.
 
   /** A stateful output module. All HMR console output handled here. */
 
-  OutputHandler = module.exports = Class.extend({
-    init: function(opts) {
+  module.exports = OutputHandler = (function() {
+    function OutputHandler(opts) {
+      this.init(opts);
+      return;
+    }
+
+    OutputHandler.prototype.init = function(opts) {
       this.opts = EXTEND(true, this.opts || {}, opts);
       this.msgs = YAML.load(PATH.join(__dirname, 'msg.yml')).events;
-    },
-    log: function(msg) {
+    };
+
+    OutputHandler.prototype.log = function(msg) {
       var finished;
       msg = msg || '';
       printf = require('printf');
       finished = printf.apply(printf, arguments);
       return this.opts.silent || console.log(finished);
-    },
-    "do": function(evt) {
-      var L, WRAP, info, msg, numFormats, output, rawTpl, sty, style, suffix, template, that, themeName, tot;
+    };
+
+    OutputHandler.prototype["do"] = function(evt) {
+      var L, WRAP, adj, info, msg, msgs, numFormats, output, rawTpl, sty, style, suffix, template, that, themeName, tot;
       that = this;
       L = function() {
         return that.log.apply(that, arguments);
@@ -60,8 +65,8 @@ Output routines for HackMyResume.
       switch (evt.sub) {
         case HME.begin:
           return this.opts.debug && L(M2C(this.msgs.begin.msg, dbgStyle), evt.cmd.toUpperCase());
-        case HME.beforeCreate:
-          L(M2C(this.msgs.beforeCreate.msg, 'green'), evt.fmt, evt.file);
+        case HME.afterCreate:
+          L(M2C(this.msgs.beforeCreate.msg, evt.isError ? 'red' : 'green'), evt.fmt, evt.file);
           break;
         case HME.beforeTheme:
           return this.opts.debug && L(M2C(this.msgs.beforeTheme.msg, dbgStyle), evt.theme.toUpperCase());
@@ -110,7 +115,7 @@ Output routines for HackMyResume.
         case HME.afterAnalyze:
           info = evt.info;
           rawTpl = FS.readFileSync(PATH.join(__dirname, 'analyze.hbs'), 'utf8');
-          HANDLEBARS.registerHelper(require('../hmc/dist/helpers/console-helpers'));
+          HANDLEBARS.registerHelper(require('../helpers/console-helpers'));
           template = HANDLEBARS.compile(rawTpl, {
             strict: false,
             assumeObjects: false
@@ -127,11 +132,35 @@ Output routines for HackMyResume.
         case HME.afterInlineConvert:
           return L(M2C(this.msgs.afterInlineConvert.msg, 'gray', 'white.dim'), evt.file, evt.fmt);
         case HME.afterValidate:
-          style = evt.isValid ? 'green' : 'yellow';
-          L(M2C(this.msgs.afterValidate.msg[0], 'white') + chalk[style].bold(evt.isValid ? this.msgs.afterValidate.msg[1] : this.msgs.afterValidate.msg[2]), evt.file, evt.fmt);
-          if (evt.errors) {
-            return _.each(evt.errors, function(err, idx) {
-              return L(chalk.yellow.bold('--> ') + chalk.yellow(err.field.replace('data.', 'resume.').toUpperCase() + ' ' + err.message));
+          style = 'red';
+          adj = '';
+          msgs = this.msgs.afterValidate.msg;
+          switch (evt.status) {
+            case 'valid':
+              style = 'green';
+              adj = msgs[1];
+              break;
+            case 'invalid':
+              style = 'yellow';
+              adj = msgs[2];
+              break;
+            case 'broken':
+              style = 'red';
+              adj = msgs[3];
+              break;
+            case 'missing':
+              style = 'red';
+              adj = msgs[4];
+              break;
+            case 'unknown':
+              style = 'red';
+              adj = msgs[5];
+          }
+          evt.schema = evt.schema.replace('jars', 'JSON Resume').toUpperCase();
+          L(M2C(msgs[0], 'white') + chalk[style].bold(adj), evt.file, evt.schema);
+          if (evt.violations) {
+            _.each(evt.violations, function(err, idx) {
+              L(chalk.yellow.bold('--> ') + chalk.yellow(err.field.replace('data.', 'resume.').toUpperCase() + ' ' + err.message));
             }, this);
           }
           break;
@@ -142,16 +171,23 @@ Output routines for HackMyResume.
           } else {
             L(M2C(this.msgs.beforePeek.msg[1], sty), evt.file);
           }
-          if (evt.target !== void 0) {
+          if (evt.target !== void 0 && !evt.error) {
             return console.dir(evt.target, {
               depth: null,
               colors: true
             });
           } else if (!evt.error) {
             return L(M2C(this.msgs.afterPeek.msg, 'yellow'), evt.requested, evt.file);
+          } else if (evt.error) {
+            return L(chalk.red(evt.error.inner.inner));
           }
       }
-    }
-  });
+    };
+
+    return OutputHandler;
+
+  })();
 
 }).call(this);
+
+//# sourceMappingURL=out.js.map

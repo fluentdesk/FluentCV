@@ -6,26 +6,24 @@ Error-handling routines for HackMyResume.
 
 
 
-HMSTATUS = require('../hmc/dist/core/status-codes')
-PKG = require('../../package.json')
-FS = require('fs')
-FCMD = require('../hmc')
-PATH = require('path')
-WRAP = require('word-wrap')
-M2C = require('../hmc/dist/utils/md2chalk.js')
-chalk = require('chalk')
-extend = require('extend')
-YAML = require('yamljs')
-printf = require('printf')
-SyntaxErrorEx = require('../hmc/dist/utils/syntax-error-ex')
-require('string.prototype.startswith')
+HMSTATUS = require '../core/status-codes'
+PKG = require '../../package.json'
+FS = require 'fs'
+FCMD = require '../index'
+PATH = require 'path'
+WRAP = require 'word-wrap'
+M2C = require '../utils/md2chalk'
+chalk = require 'chalk'
+extend = require 'extend'
+YAML = require 'yamljs'
+printf = require 'printf'
+SyntaxErrorEx = require '../utils/syntax-error-ex'
+require 'string.prototype.startswith'
 
 
 
-###*
-Error handler for HackMyResume. All errors are handled here.
-@class ErrorHandler
-###
+###* Error handler for HackMyResume. All errors are handled here.
+@class ErrorHandler ###
 ErrorHandler = module.exports =
 
   init: ( debug, assert, silent ) ->
@@ -38,7 +36,7 @@ ErrorHandler = module.exports =
   err: ( ex, shouldExit ) ->
 
     # Short-circuit logging output if --silent is on
-    o = if this.silent then () -> else _defaultLog
+    o = if @silent then () -> else _defaultLog
 
     # Special case; can probably be removed.
     throw ex if ex.pass
@@ -51,7 +49,7 @@ ErrorHandler = module.exports =
 
       # Output the error message
       objError = assembleError.call @, ex
-      o( this[ 'format_' + objError.etype ]( objError.msg ))
+      o( @[ 'format_' + objError.etype ]( objError.msg ))
 
       # Output the stack (sometimes)
       if objError.withStack
@@ -59,20 +57,20 @@ ErrorHandler = module.exports =
         stack && o( chalk.gray( stack ) );
 
       # Quit if necessary
-      if ex.quit || objError.quit
+      if shouldExit
         if @debug
           o chalk.cyan('Exiting with error code ' + ex.fluenterror.toString())
-        if this.assert
+        if @assert
           ex.pass = true
           throw ex
         process.exit ex.fluenterror
 
     # Handle raw exceptions
     else
-      o( ex )
+      o ex
       stackTrace = ex.stack || (ex.inner && ex.inner.stack)
       if stackTrace && this.debug
-        o( M2C(ex.stack || ex.inner.stack, 'gray') )
+        o M2C(ex.stack || ex.inner.stack, 'gray')
 
 
 
@@ -139,7 +137,6 @@ assembleError = ( ex ) ->
     when HMSTATUS.pdfGeneration
       msg = M2C( this.msgs.pdfGeneration.msg, 'bold' )
       msg += chalk.red('\n' + ex.inner) if ex.inner
-      withStack = true
       quit = false
       etype = 'error'
 
@@ -205,14 +202,28 @@ assembleError = ( ex ) ->
       etype = 'custom'
 
     when HMSTATUS.parseError
-      if SyntaxErrorEx.is( ex.inner )
+      if SyntaxErrorEx.is ex.inner
         console.error printf( M2C(this.msgs.readError.msg, 'red'), ex.file )
         se = new SyntaxErrorEx ex, ex.raw
-        msg = printf M2C( this.msgs.parseError.msg, 'red' ), se.line, se.col
-      else if ex.inner && ex.inner.line != undefined && ex.inner.col != undefined
-        msg = printf( M2C( this.msgs.parseError.msg, 'red' ), ex.inner.line, ex.inner.col)
+        if se.line? and se.col?
+          msg = printf M2C( this.msgs.parseError.msg[0], 'red' ), se.line, se.col
+        else if se.line?
+          msg = printf M2C( this.msgs.parseError.msg[1], 'red' ), se.line
+        else
+          msg = M2C @msgs.parseError.msg[2], 'red'
+      else if ex.inner && ex.inner.line? && ex.inner.col?
+        msg = printf( M2C( this.msgs.parseError.msg[0], 'red' ), ex.inner.line, ex.inner.col)
       else
         msg = ex
+      etype = 'error'
+
+    when HMSTATUS.createError
+      # inner.code could be EPERM, EACCES, etc
+      msg = printf M2C( this.msgs.createError.msg ), ex.inner.path
+      etype = 'error'
+
+    when HMSTATUS.validateError
+      msg = printf M2C( @msgs.validateError.msg ), ex.inner.toString()
       etype = 'error'
 
   msg: msg              # The error message to display

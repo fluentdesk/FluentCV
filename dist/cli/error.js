@@ -8,19 +8,19 @@ Error-handling routines for HackMyResume.
 (function() {
   var ErrorHandler, FCMD, FS, HMSTATUS, M2C, PATH, PKG, SyntaxErrorEx, WRAP, YAML, _defaultLog, assembleError, chalk, extend, printf;
 
-  HMSTATUS = require('../hmc/dist/core/status-codes');
+  HMSTATUS = require('../core/status-codes');
 
   PKG = require('../../package.json');
 
   FS = require('fs');
 
-  FCMD = require('../hmc');
+  FCMD = require('../index');
 
   PATH = require('path');
 
   WRAP = require('word-wrap');
 
-  M2C = require('../hmc/dist/utils/md2chalk.js');
+  M2C = require('../utils/md2chalk');
 
   chalk = require('chalk');
 
@@ -30,13 +30,12 @@ Error-handling routines for HackMyResume.
 
   printf = require('printf');
 
-  SyntaxErrorEx = require('../hmc/dist/utils/syntax-error-ex');
+  SyntaxErrorEx = require('../utils/syntax-error-ex');
 
   require('string.prototype.startswith');
 
 
-  /**
-  Error handler for HackMyResume. All errors are handled here.
+  /** Error handler for HackMyResume. All errors are handled here.
   @class ErrorHandler
    */
 
@@ -62,7 +61,7 @@ Error-handling routines for HackMyResume.
           stack = ex.stack || (ex.inner && ex.inner.stack);
           stack && o(chalk.gray(stack));
         }
-        if (ex.quit || objError.quit) {
+        if (shouldExit) {
           if (this.debug) {
             o(chalk.cyan('Exiting with error code ' + ex.fluenterror.toString()));
           }
@@ -140,7 +139,6 @@ Error-handling routines for HackMyResume.
         if (ex.inner) {
           msg += chalk.red('\n' + ex.inner);
         }
-        withStack = true;
         quit = false;
         etype = 'error';
         break;
@@ -215,12 +213,26 @@ Error-handling routines for HackMyResume.
         if (SyntaxErrorEx.is(ex.inner)) {
           console.error(printf(M2C(this.msgs.readError.msg, 'red'), ex.file));
           se = new SyntaxErrorEx(ex, ex.raw);
-          msg = printf(M2C(this.msgs.parseError.msg, 'red'), se.line, se.col);
-        } else if (ex.inner && ex.inner.line !== void 0 && ex.inner.col !== void 0) {
-          msg = printf(M2C(this.msgs.parseError.msg, 'red'), ex.inner.line, ex.inner.col);
+          if ((se.line != null) && (se.col != null)) {
+            msg = printf(M2C(this.msgs.parseError.msg[0], 'red'), se.line, se.col);
+          } else if (se.line != null) {
+            msg = printf(M2C(this.msgs.parseError.msg[1], 'red'), se.line);
+          } else {
+            msg = M2C(this.msgs.parseError.msg[2], 'red');
+          }
+        } else if (ex.inner && (ex.inner.line != null) && (ex.inner.col != null)) {
+          msg = printf(M2C(this.msgs.parseError.msg[0], 'red'), ex.inner.line, ex.inner.col);
         } else {
           msg = ex;
         }
+        etype = 'error';
+        break;
+      case HMSTATUS.createError:
+        msg = printf(M2C(this.msgs.createError.msg), ex.inner.path);
+        etype = 'error';
+        break;
+      case HMSTATUS.validateError:
+        msg = printf(M2C(this.msgs.validateError.msg), ex.inner.toString());
         etype = 'error';
     }
     return {
@@ -232,3 +244,5 @@ Error-handling routines for HackMyResume.
   };
 
 }).call(this);
+
+//# sourceMappingURL=error.js.map
