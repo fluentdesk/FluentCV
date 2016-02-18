@@ -43,7 +43,7 @@
     "url": "https://github.com/fluentdesk/FluentCV/issues"
   },
   "bin": {
-    "fluentcv": "dist/index.js"
+    "fluentcv": "dist/cli/index.js"
   },
   "homepage": "https://github.com/fluentdesk/FluentCV",
   "main": "dist/index.js",
