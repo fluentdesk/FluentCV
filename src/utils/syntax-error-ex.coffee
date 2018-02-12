@@ -26,10 +26,11 @@ class SyntaxErrorEx
       JSONLint = require 'jsonlint'
       try
         JSONLint.parse rawData
-      catch
-        @line = (/on line (\d+)/.exec _error)[1]
+      catch err
+        @line = (/on line (\d+)/.exec err)[1]
 
 
-
+# Return true if the supplied parameter is a JavaScript SyntaxError
 SyntaxErrorEx.is = ( ex ) -> ex instanceof SyntaxError
+
 module.exports = SyntaxErrorEx;

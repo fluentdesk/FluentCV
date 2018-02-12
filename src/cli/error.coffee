@@ -7,15 +7,12 @@ Error-handling routines for HackMyResume.
 
 
 HMSTATUS = require '../core/status-codes'
-PKG = require '../../package.json'
 FS = require 'fs'
-FCMD = require '../index'
 PATH = require 'path'
 WRAP = require 'word-wrap'
 M2C = require '../utils/md2chalk'
 chalk = require 'chalk'
 extend = require 'extend'
-YAML = require 'yamljs'
 printf = require 'printf'
 SyntaxErrorEx = require '../utils/syntax-error-ex'
 require 'string.prototype.startswith'
@@ -24,7 +21,7 @@ require 'string.prototype.startswith'
 
 ###* Error handler for HackMyResume. All errors are handled here.
 @class ErrorHandler ###
-ErrorHandler = module.exports =
+module.exports =
 
   init: ( debug, assert, silent ) ->
     @debug = debug
@@ -57,7 +54,7 @@ ErrorHandler = module.exports =
         stack && o( chalk.gray( stack ) );
 
       # Quit if necessary
-      if shouldExit
+      if shouldExit or ex.exit
         if @debug
           o chalk.cyan('Exiting with error code ' + ex.fluenterror.toString())
         if @assert
@@ -86,8 +83,7 @@ ErrorHandler = module.exports =
   format_custom: ( msg ) -> msg
 
 
-
-_defaultLog = () -> console.log.apply console.log, arguments
+_defaultLog = () -> console.log.apply console.log, arguments # eslint-disable-line no-console
 
 
 
@@ -110,17 +106,19 @@ assembleError = ( ex ) ->
       quit = false
 
     when HMSTATUS.resumeNotFound
-      msg = M2C( this.msgs.resumeNotFound.msg, 'yellow' );
+      #msg = M2C( this.msgs.resumeNotFound.msg, 'yellow' );
+      msg += M2C(FS.readFileSync(
+        PATH.resolve(__dirname, 'help/' + ex.verb + '.txt'), 'utf8' ), 'white', 'yellow')
 
     when HMSTATUS.missingCommand
-      msg = M2C( this.msgs.missingCommand.msg + " (", 'yellow');
-      msg += Object.keys( FCMD.verbs ).map( (v, idx, ar) ->
-        return ( if idx == ar.length - 1 then chalk.yellow('or ') else '') +
-          chalk.yellow.bold(v.toUpperCase());
-      ).join( chalk.yellow(', ')) + chalk.yellow(").\n\n");
+      # msg = M2C( this.msgs.missingCommand.msg + " (", 'yellow');
+      # msg += Object.keys( FCMD.verbs ).map( (v, idx, ar) ->
+      #   return ( if idx == ar.length - 1 then chalk.yellow('or ') else '') +
+      #     chalk.yellow.bold(v.toUpperCase());
+      # ).join( chalk.yellow(', ')) + chalk.yellow(").\n\n");
 
-      msg += chalk.gray(FS.readFileSync(
-        PATH.resolve(__dirname, '../cli/use.txt'), 'utf8' ))
+      msg += M2C(FS.readFileSync(
+        PATH.resolve(__dirname, 'help/use.txt'), 'utf8' ), 'white', 'yellow')
 
     when HMSTATUS.invalidCommand
       msg = printf( M2C( this.msgs.invalidCommand.msg, 'yellow'), ex.attempted )
@@ -178,6 +176,7 @@ assembleError = ( ex ) ->
 
     when HMSTATUS.readError
       if !ex.quiet
+        # eslint-disable-next-line no-console
         console.error(printf( M2C(this.msgs.readError.msg, 'red'), ex.file))
       msg = ex.inner.toString()
       etype = 'error'
@@ -203,6 +202,7 @@ assembleError = ( ex ) ->
 
     when HMSTATUS.parseError
       if SyntaxErrorEx.is ex.inner
+        # eslint-disable-next-line no-console
         console.error printf( M2C(this.msgs.readError.msg, 'red'), ex.file )
         se = new SyntaxErrorEx ex, ex.raw
         if se.line? and se.col?
@@ -224,6 +224,42 @@ assembleError = ( ex ) ->
 
     when HMSTATUS.validateError
       msg = printf M2C( @msgs.validateError.msg ), ex.inner.toString()
+      etype = 'error'
+
+    when HMSTATUS.invalidOptionsFile
+      msg = M2C @msgs.invalidOptionsFile.msg[0]
+      if SyntaxErrorEx.is ex.inner
+        # eslint-disable-next-line no-console
+        console.error printf( M2C(this.msgs.readError.msg, 'red'), ex.file )
+        se = new SyntaxErrorEx ex, ex.raw
+        if se.line? and se.col?
+          msg += printf M2C( this.msgs.parseError.msg[0], 'red' ), se.line, se.col
+        else if se.line?
+          msg += printf M2C( this.msgs.parseError.msg[1], 'red' ), se.line
+        else
+          msg += M2C @msgs.parseError.msg[2], 'red'
+      else if ex.inner && ex.inner.line? && ex.inner.col?
+        msg += printf( M2C( this.msgs.parseError.msg[0], 'red' ), ex.inner.line, ex.inner.col)
+      else
+        msg += ex
+      msg += @msgs.invalidOptionsFile.msg[1]
+      etype = 'error'
+
+    when HMSTATUS.optionsFileNotFound
+      msg = M2C( @msgs.optionsFileNotFound.msg )
+      etype = 'error'
+
+    when HMSTATUS.unknownSchema
+      msg = M2C( @msgs.unknownSchema.msg[0] )
+      #msg += "\n" + M2C( @msgs.unknownSchema.msg[1], 'yellow' )
+      etype = 'error'
+
+    when HMSTATUS.themeHelperLoad
+      msg = printf M2C( @msgs.themeHelperLoad.msg ), ex.glob
+      etype = 'error'
+
+    when HMSTATUS.invalidSchemaVersion
+      msg = printf M2C( @msgs.invalidSchemaVersion.msg ), ex.data
       etype = 'error'
 
   msg: msg              # The error message to display

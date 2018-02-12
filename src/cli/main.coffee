@@ -13,9 +13,8 @@ EXTEND = require 'extend'
 chalk = require 'chalk'
 PATH = require 'path'
 HMSTATUS = require '../core/status-codes'
-HME = require '../core/event-codes'
 safeLoadJSON = require '../utils/safe-json-loader'
-StringUtils = require '../utils/string.js'
+#StringUtils = require '../utils/string.js'
 _ = require 'underscore'
 OUTPUT = require './out'
 PAD = require 'string-padding'
@@ -23,7 +22,7 @@ Command = require('commander').Command
 M2C = require '../utils/md2chalk'
 printf = require 'printf'
 _opts = { }
-_title = chalk.white.bold('\n*** HackMyResume v' +PKG.version+ ' ***')
+_title = chalk.white.bold('\n*** FluentCV v' +PKG.version+ ' ***')
 _out = new OUTPUT( _opts )
 _err = require('./error')
 _exitCallback = null
@@ -37,15 +36,18 @@ line interface as a single method accepting a parameter array.
 @param rawArgs {Array} An array of command-line parameters. Will either be
 process.argv (in production) or custom parameters (in test).
 ###
-main = module.exports = ( rawArgs, exitCallback ) ->
+module.exports = ( rawArgs, exitCallback ) ->
 
   initInfo = initialize( rawArgs, exitCallback )
+  if initInfo is null
+    return
+
   args = initInfo.args
 
   # Create the top-level (application) command...
-  program = new Command('hackmyresume')
+  program = new Command('fluentcv')
     .version(PKG.version)
-    .description(chalk.yellow.bold('*** HackMyResume ***'))
+    .description(chalk.yellow.bold('*** FluentCV ***'))
     .option('-s --silent', 'Run in silent mode')
     .option('--no-color', 'Disable colors')
     .option('--color', 'Enable colors')
@@ -81,6 +83,7 @@ main = module.exports = ( rawArgs, exitCallback ) ->
   program
     .command('convert')
     .description('Convert a resume to/from FRESH or JSON RESUME format.')
+    .option('-f --format <fmt>', 'FRESH or JRS format and optional version', undefined)
     .action(->
       x = splitSrcDest.call( this );
       execute.call( this, x.src, x.dst, this.opts(), logMsg)
@@ -91,6 +94,7 @@ main = module.exports = ( rawArgs, exitCallback ) ->
   program
     .command('analyze')
     .arguments('<sources...>')
+    .option('--private', 'Include resume fields marked as private', false)
     .description('Analyze one or more resumes.')
     .action(( sources ) ->
       execute.call( this, sources, [], this.opts(), logMsg)
@@ -102,7 +106,8 @@ main = module.exports = ( rawArgs, exitCallback ) ->
     .command('peek')
     .arguments('<sources...>')
     .description('Peek at a resume field or section')
-    .action(( sources, sectionOrField ) ->
+    #.action(( sources, sectionOrField ) ->
+    .action(( sources ) ->
       dst = if (sources && sources.length > 1) then [sources.pop()] else []
       execute.call( this, sources, dst, this.opts(), logMsg)
       return
@@ -118,12 +123,28 @@ main = module.exports = ( rawArgs, exitCallback ) ->
     .option('-p --pdf <engine>', 'PDF generation engine')
     .option('--no-sort', 'Sort resume sections by date', false)
     .option('--tips', 'Display theme tips and warnings.', false)
+    .option('--private', 'Include resume fields marked as private', false)
+    .option('--no-escape', 'Turn off encoding in Handlebars themes.', false)
     .description('Generate resume to multiple formats')
-    .action(( sources, targets, options ) ->
+    #.action(( sources, targets, options ) ->
+    .action(->
       x = splitSrcDest.call( this );
       execute.call( this, x.src, x.dst, this.opts(), logMsg)
       return
     )
+
+  # Create the HELP command
+  program
+    .command('help')
+    .arguments('[command]')
+    .description('Get help on a FluentCV command')
+    .action ( cmd ) ->
+      cmd = cmd || 'use'
+      manPage = FS.readFileSync(
+        PATH.join(__dirname, 'help/' + cmd + '.txt'),
+        'utf8')
+      _out.log M2C(manPage, 'white', 'yellow.bold')
+      return
 
   program.parse( args )
 
@@ -137,6 +158,16 @@ initialize = ( ar, exitCallback ) ->
 
   _exitCallback = exitCallback || process.exit
   o = initOptions ar
+  if o.ex
+    _err.init false, true, false
+    if( o.ex.op == 'parse' )
+      _err.err
+        fluenterror: if o.ex.op == 'parse' then HMSTATUS.invalidOptionsFile else HMSTATUS.optionsFileNotFound,
+        inner: o.ex.inner,
+        quit: true
+    else
+      _err.err fluenterror: HMSTATUS.optionsFileNotFound, inner: o.ex.inner, quit: true
+    return null
   o.silent || logMsg( _title )
 
   # Emit debug prelude if --debug was specified
@@ -145,7 +176,7 @@ initialize = ( ar, exitCallback ) ->
     _out.log('')
     _out.log(chalk.cyan(PAD('  Platform:',25, null, PAD.RIGHT)) + chalk.cyan.bold( if process.platform == 'win32' then 'windows' else process.platform ))
     _out.log(chalk.cyan(PAD('  Node.js:',25, null, PAD.RIGHT)) + chalk.cyan.bold( process.version ))
-    _out.log(chalk.cyan(PAD('  HackMyResume:',25, null, PAD.RIGHT)) + chalk.cyan.bold('v' + PKG.version ))
+    _out.log(chalk.cyan(PAD('  FluentCV:',25, null, PAD.RIGHT)) + chalk.cyan.bold('v' + PKG.version ))
     _out.log(chalk.cyan(PAD('  FRESCA:',25, null, PAD.RIGHT)) + chalk.cyan.bold( PKG.dependencies.fresca ))
     #_out.log(chalk.cyan(PAD('  fresh-themes:',25, null, PAD.RIGHT)) + chalk.cyan.bold( PKG.dependencies['fresh-themes'] ))
     #_out.log(chalk.cyan(PAD('  fresh-jrs-converter:',25, null, PAD.RIGHT)) + chalk.cyan.bold( PKG.dependencies['fresh-jrs-converter'] ))
@@ -154,25 +185,23 @@ initialize = ( ar, exitCallback ) ->
   _err.init o.debug, o.assert, o.silent
 
   # Handle invalid verbs here (a bit easier here than in commander.js)...
-  if o.verb && !HMR.verbs[ o.verb ] && !HMR.alias[ o.verb ]
+  if o.verb && !HMR.verbs[ o.verb ] && !HMR.alias[ o.verb ] && o.verb != 'help'
     _err.err fluenterror: HMSTATUS.invalidCommand, quit: true, attempted: o.orgVerb, true
 
   # Override the .missingArgument behavior
-  Command.prototype.missingArgument = (name) ->
-    _err.err
-      fluenterror:
-        if this.name() != 'new'
-        then HMSTATUS.resumeNotFound
-        else HMSTATUS.createNameMissing
-      , true
+  Command.prototype.missingArgument = (### unused ###) ->
+    if this.name() != 'help'
+      _err.err
+        verb: @name()
+        fluenterror: HMSTATUS.resumeNotFound
+        , true
     return
-
 
   # Override the .helpInformation behavior
   Command.prototype.helpInformation = ->
     manPage = FS.readFileSync(
-      PATH.join(__dirname, 'use.txt'), 'utf8' )
-    return chalk.green.bold(manPage)
+      PATH.join(__dirname, 'help/use.txt'), 'utf8' )
+    return M2C(manPage, 'white', 'yellow')
 
   return {
     args: o.args,
@@ -208,6 +237,7 @@ initOptions = ( ar ) ->
       if optStr && (optStr = optStr.trim())
         #var myJSON = JSON.parse(optStr);
         if( optStr[0] == '{')
+          # TODO: remove use of evil(). - hacksalot
           ### jshint ignore:start ###
           oJSON = eval('(' + optStr + ')') # jshint ignore:line <-- no worky
           ### jshint ignore:end ###
@@ -215,19 +245,22 @@ initOptions = ( ar ) ->
           inf = safeLoadJSON( optStr )
           if( !inf.ex )
             oJSON = inf.json
-          # TODO: Error handling
+          else
+            return inf
 
   # Grab the --debug flag, --silent, --assert and --no-color flags
   isDebug = _.some args, (v) -> v == '-d' || v == '--debug'
   isSilent = _.some args, (v) -> v == '-s' || v == '--silent'
   isAssert = _.some args, (v) -> v == '-a' || v == '--assert'
   isMono = _.some args, (v) -> v == '--no-color'
+  isNoEscape = _.some args, (v) -> v == '--no-escape'
 
   return {
     color: !isMono,
     debug: isDebug,
     silent: isSilent,
     assert: isAssert,
+    noescape: isNoEscape,
     orgVerb: oVerb,
     verb: verb,
     json: oJSON,
@@ -243,7 +276,7 @@ execute = ( src, dst, opts, log ) ->
   v = new HMR.verbs[ @name() ]()
 
   # Initialize command-specific options
-  loadOptions.call( this, opts, this.parent.jsonArgs )
+  loadOptions.call this, opts, this.parent.jsonArgs
 
   # Set up error/output handling
   _opts.errHandler = v
@@ -261,7 +294,7 @@ execute = ( src, dst, opts, log ) ->
 
 
 ### Success handler for verb invocations. Calls process.exit by default ###
-executeSuccess = (obj) ->
+executeSuccess = (###obj###) ->
   # Can't call _exitCallback here (process.exit) when PDF is running in BK
   #_exitCallback 0; return
 
@@ -269,9 +302,15 @@ executeSuccess = (obj) ->
 
 ### Failure handler for verb invocations. Calls process.exit by default ###
 executeFail = (err) ->
+  #console.dir err
   finalErrorCode = -1
   if err
-    finalErrorCode = if err.fluenterror then err.fluenterror else err
+    if err.fluenterror
+      finalErrorCode = err.fluenterror
+    else if err.length
+      finalErrorCode = err[0].fluenterror
+    else
+      finalErrorCode = err
   if _opts.debug
     msgs = require('./msg').errors;
     logMsg printf M2C( msgs.exiting.msg, 'cyan' ), finalErrorCode
@@ -323,7 +362,8 @@ splitSrcDest = () ->
 
   params = this.parent.args.filter((j) -> return String.is(j) )
   if params.length == 0
-    throw { fluenterror: HMSTATUS.resumeNotFound, quit: true }
+    #tmpName = @name()
+    throw { fluenterror: HMSTATUS.resumeNotFound, verb: @name(), quit: true }
 
   # Find the TO keyword, if any
   splitAt = _.findIndex( params, (p) -> return p.toLowerCase() == 'to'; )
@@ -346,4 +386,5 @@ splitSrcDest = () ->
 
 ### Simple logging placeholder. ###
 logMsg = () ->
+  # eslint-disable-next-line no-console
   _opts.silent || console.log.apply( console.log, arguments )

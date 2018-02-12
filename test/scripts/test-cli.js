@@ -18,13 +18,13 @@ var chai = require('chai')
 
 describe('Testing CLI interface', function () {
 
-  this.timeout(20000);
+  this.timeout(50000);
 
   function run( args, expErr ) {
     var title = args;
     it( 'Testing: "' + title + '"\n\n', function( done ) {
       try {
-        EXEC('hackmyresume ' + args, null, function(err,stdo,stde) {
+        EXEC('fluentcv ' + args, null, function(err,stdo,stde) {
           var errCode = (err && err.code) || 0;
           errCode.should.equal( parseInt(expErr, 10) );
           done();

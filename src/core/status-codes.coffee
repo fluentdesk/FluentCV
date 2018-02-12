@@ -33,3 +33,8 @@ module.exports =
   missingParam: 24
   createError: 25
   validateError: 26
+  invalidOptionsFile: 27
+  optionsFileNotFound: 28
+  unknownSchema: 29
+  themeHelperLoad: 30
+  invalidSchemaVersion: 31

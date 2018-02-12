@@ -1,5 +1,96 @@
 CHANGELOG
 =========
+
+## v1.9.0-beta
+
+*Welcome to the first new version of FluentCV in over a year. The purpose of
+this release is to gather feature enhancements and bug fixes collected over the
+past 18 months as we reorganize, rebrand, and prepare for the 2.0 release.*
+
+### Added
+
+- Support for **private resume fields**. Mark any non-leaf node in your resume
+JSON with the `private` property and it will be omitted from outbound resumes.
+
+    ```json
+    "employment": {
+      "history": [
+        {
+          "employer": "Acme Real Estate"
+        },
+        {
+          "employer": "Area 51 Alien Research Laboratory",
+          "private": true
+        },
+        {
+          "employer": "H&R Block"
+        }
+      ]
+    }
+    ```
+- Support for **PDF generation through WeasyPrint** in addition to the
+existing support for wkhtmltopdf and PhantomJS.
+
+- Theme authors can now develop and package **custom Handlebars theme helpers**
+via the `helpers` key of the `theme.json` file (FRESH themes only) (#158).
+
+- Help system has been updated with a `HELP` command and dedicated help pages
+for each command.
+
+- Theme authors can **relocate theme assets** with the `baseFolder` property in
+the FRESH `theme.json`.
+
+- FluentCV will now **validate the options file** (if any) loaded with `-o`
+or `--options` and warn the user if necessary.
+
+- Ability to **disable Handlebars encoding/escaping** of resume fields with
+`--no-escape`.
+
+- Introduced the [fresh-test-themes][ftt] project as a repository for simple,
+test-only resume themes in the FRESH format.
+
+### Changed
+
+- Dropped support for Node 4 and 5. FluentCV officially runs on Node 6+.
+
+- The FRESCA project has been renamed to [fresh-resume-schema][fresca]. FRESCA
+is still the nickname.
+
+- The FluentCV web page has moved to https://fluentdesk.com/fluentcv.
+
+### Fixed
+
+- Fixed an issue that would cause the `convert` command to detect the inbound
+resume type (FRESH or JRS) incorrectly (#162).
+
+- Fixed an issue where generating new JRS resumes would cause a `null` or
+`undefined` error (#165).
+
+- Fixed an issue preventing mixed-case themes from being loaded (#172).
+
+- Fixed an issue requiring JSON Resume themes contain `json-resume-theme` in the
+theme path (#173).
+
+- Fixed an issue that would cause strange `@@@@` characters to appear in
+generated resumes (#207, #168, #198).
+
+- Fixed an issue that would cause resume generation to hang after a JSON Resume
+themed resume was generated (#182).
+
+- Fixed an issue that would cause nothing to be generated for Markdown (.md)
+formats (#179).
+
+- Fixed an issue that would prevent a JRS resume from being converted to FRESH
+via the `convert` command (#180).
+
+- Fixed an issue that would cause broken styling for JSON Resume themes (#155).
+
+### Internal
+
+- Tests: fixed resume duration tests (#181).
+
+- Style: move to
+
 ## v1.8.0
 
 ### Added
@@ -33,19 +124,19 @@ certain environments.
 CoffeeScript transpilation.
 
 - Introduced [template-friendly Awesome-CV fork][awefork] to isolate template
-expansion logic & provide better durability for HackMyResume's `awesome` theme.
+expansion logic & provide better durability for FluentCV's `awesome` theme.
 
 - Fixed a couple temporary regressions (#139, #140) on the dev branch.
 
 - Additional tests.
 
-- Minor breaking HackMyResume API changes.
+- Minor breaking FluentCV API changes.
 
 ## v1.7.4
 
 ### Added
 
-- [Build instructions](https://github.com/hacksalot/HackMyResume/blob/master/BUILDING.md).
+- [Build instructions](https://github.com/hacksalot/FluentCV/blob/master/BUILDING.md).
 
 ### Changed
 
@@ -87,7 +178,7 @@ submodule.
 ### Changed
 
 - Caffeinate. CoffeeScript now used throughout
-[HackMyResume](https://github.com/hacksalot/HackMyResume) and
+[FluentCV](https://github.com/hacksalot/FluentCV) and
 [HackMyCore](https://github.com/hacksalot/HackMyCore); generated JavaScript
 lives in `/dist`.
 
@@ -125,22 +216,22 @@ respectively ([#92][i92]).
 `education`, and other sections with start/end dates.
 
 - Support for an `.ignore` property on any FRESH or JSON Resume section or field.
-Ignored properties will be treated by HackMyResume as if they weren't present.
+Ignored properties will be treated by FluentCV as if they weren't present.
 
 - Emit extended status and error info with the `--debug` or `-d` switch.
 
 - The `-o` or `--options` switch can now handle either the path to a **JSON
 settings file** or **raw JSON/JavaScript**. Since the JSON double quote syntax
-is a bit cumbersome from the command line, HackMyResume accepts regular
+is a bit cumbersome from the command line, FluentCV accepts regular
 JavaScript object literal syntax:
 
-        hackmyresume build resume.json -o "{ theme: 'compact', silent: 'true' }"
+        fluentcv build resume.json -o "{ theme: 'compact', silent: 'true' }"
 
 - Ability to disable sorting of resume sections (employments, projects, etc.)
 with the `--no-sort` option. HMR will respect the order of items as they appear
 in your resume `.json` file.
 
-- Improvements to the starter resume emitted by `hackmyresume new`.
+- Improvements to the starter resume emitted by `fluentcv new`.
 
 - Theme Authoring: Annotated the HTML and MS Word (XML) formats of the Modern
 theme for FRESH theme authors.
@@ -153,14 +244,14 @@ destination.
 
 ### Changed
 
-- Rewrote the HackMyResume man/help page.
+- Rewrote the FluentCV man/help page.
 
 - Minor incremental updates to the [FRESCA][fresca] schema.
 
 - PDF generation now uses asynchronous `spawn()` which has better compatibility
 with old or boutique versions of Node.js.
 
-- Refactored colors in HackMyResume output. Errors will now display as red,
+- Refactored colors in FluentCV output. Errors will now display as red,
 warnings as yellow, successful operations as green, and informational messages
 as cyan.
 
@@ -171,11 +262,11 @@ by default. Use the `--tips` option to view them.
 option, also defaulting to false.
 
 - Removed the `hello-world` theme from the [prebuilt themes][themes] that ship
-with HackMyResume. It can be installed separately from NPM:
+with FluentCV. It can be installed separately from NPM:
 
   ```bash
   npm install fresh-theme-hello-world
-  hackmyresume resume.json -t node_modules/fresh-theme-hello-world
+  fluentcv resume.json -t node_modules/fresh-theme-hello-world
   ```
 
 - sd
@@ -199,13 +290,13 @@ with HackMyResume. It can be installed separately from NPM:
 
 ### Internal
 
-- Logging messages have been moved out of core HackMyResume code ahead of
+- Logging messages have been moved out of core FluentCV code ahead of
 localization support.
 
-- All HackMyResume console output is described in `msg.yml`.
+- All FluentCV console output is described in `msg.yml`.
 
 - Relaxed pure JavaScript requirement. CoffeeScript will now start appearing
-in HackMyResume and FluentCV sources!
+in FluentCV and FluentCV sources!
 
 - Additional tests.
 
@@ -219,21 +310,21 @@ in HackMyResume and FluentCV sources!
 
 ### Added
 
-- Preliminary support for `-d` or `--debug` flag. Forces HackMyResume to emit a stack trace under error conditions.
+- Preliminary support for `-d` or `--debug` flag. Forces FluentCV to emit a stack trace under error conditions.
 
 ## v1.5.0
 
 ### Added
 
-- HackMyResume now supports **CLI-based generation of PDF formats across multiple engines (Phantom, wkhtmltopdf, etc)**. Instead of talking to these engines over a programmatic API, as in prior versions, HackMyResume 1.5+ speaks to them over the same command-line interface (CLI) you'd use if you were using these tools directly.
+- FluentCV now supports **CLI-based generation of PDF formats across multiple engines (Phantom, wkhtmltopdf, etc)**. Instead of talking to these engines over a programmatic API, as in prior versions, FluentCV 1.5+ speaks to them over the same command-line interface (CLI) you'd use if you were using these tools directly.
 
-- HackMyResume will now (attempt to) **generate a PDF output for JSON Resume themes** (in addition to HTML).
+- FluentCV will now (attempt to) **generate a PDF output for JSON Resume themes** (in addition to HTML).
 
 - Minor README and FAQ additions.
 
 ### Changed
 
-- **Cleaner, quicker installs**. Installing HackMyResume with `npm install hackmyresume -g` will no longer trigger a lengthy, potentially error-prone install for Phantom.js and/or wkhtmltopdf for PDF support. Instead, users can install these engines externally and HMR will use them when present.
+- **Cleaner, quicker installs**. Installing FluentCV with `npm install fluentcv -g` will no longer trigger a lengthy, potentially error-prone install for Phantom.js and/or wkhtmltopdf for PDF support. Instead, users can install these engines externally and HMR will use them when present.
 
 - Minor error handling improvements.
 
@@ -247,18 +338,18 @@ in HackMyResume and FluentCV sources!
 
 ### Added
 
-- Introduced [FAQ](https://github.com/hacksalot/HackMyResume/blob/master/FAQ.md).
+- Introduced [FAQ](https://github.com/hacksalot/FluentCV/blob/master/FAQ.md).
 - Additional README notes.
 
 ## v1.4.1
 
 ### Added
 
-- `hackmyresume new` now generates a [valid starter resume with sample data](https://github.com/fluentdesk/fresh-resume-starter).
+- `fluentcv new` now generates a [valid starter resume with sample data](https://github.com/fluentdesk/fresh-resume-starter).
 
 ### Fixed
 
-- Fixed warning message when `hackmyresume new` is run without a filename.
+- Fixed warning message when `fluentcv new` is run without a filename.
 
 ## v1.4.0
 
@@ -273,7 +364,7 @@ open source, commercial, private, personal, and creative projects.
 - **Rename resume sections** to different languages or wordings.
 - **Specify complex options via external file**. Use with the `-o` or `--opts` option.
 - **Disable colors** with the `--no-color` flag.
-- **Theme messages and usage tips** instructions will now appear in the default HackMyResume output for the `build` command. Run `hackmyresume build resume.json -t awesome` for an example. Turn off with the `--no-tips` flag.
+- **Theme messages and usage tips** instructions will now appear in the default FluentCV output for the `build` command. Run `fluentcv build resume.json -t awesome` for an example. Turn off with the `--no-tips` flag.
 - **Treat validation errors as warnings** with the `--assert` switch (VALIDATE command only).
 
 ### Fixed
@@ -315,17 +406,17 @@ theme.
 
 ### Added
 
-- **Local generation of JSON Resume themes**. To use a JSON Resume theme, first install it with `npm install jsonresume-theme-[blah]` (most JSON Resume themes are on NPM). Then pass it into HackMyResume via the `-t` parameter:
+- **Local generation of JSON Resume themes**. To use a JSON Resume theme, first install it with `npm install jsonresume-theme-[blah]` (most JSON Resume themes are on NPM). Then pass it into FluentCV via the `-t` parameter:
 
-    `hackmyresume BUILD resume.json TO out/somefile.all -t node_modules/jsonresume-theme-classy`
-- **Better Markdown support.** HackMyResume will start flowing basic Markdown styles to JSON Resume (HTML) themes. FRESH's existing Markdown support has also been improved.
+    `fluentcv BUILD resume.json TO out/somefile.all -t node_modules/jsonresume-theme-classy`
+- **Better Markdown support.** FluentCV will start flowing basic Markdown styles to JSON Resume (HTML) themes. FRESH's existing Markdown support has also been improved.
 - **.PNG output formats** will start appearing in themes that declare an HTML output.
-- **Tweak CSS embedding / linking via the --css option** (`<style></style>` vs `<link>`). Only works for HTML (or HTML-driven) formats of FRESH themes. Use `--css=link` to link in CSS assets and `--css=embed` to embed the styles in the HTML document. For example `hackmyresume BUILD resume.json TO out/resume.all --css=link`.
+- **Tweak CSS embedding / linking via the --css option** (`<style></style>` vs `<link>`). Only works for HTML (or HTML-driven) formats of FRESH themes. Use `--css=link` to link in CSS assets and `--css=embed` to embed the styles in the HTML document. For example `fluentcv BUILD resume.json TO out/resume.all --css=link`.
 - **Improved Handlebars/Underscore helper support** for FRESH themes. Handlebars themes can access helpers via `{{helperName}}`. Underscore themes can access helpers via the `h` object.
 
 ### Changed
 
-- **Distinguish between validation errors and syntax errors** when validating a FRESH or JRS resume with `hackmyresume validate <blah>`.
+- **Distinguish between validation errors and syntax errors** when validating a FRESH or JRS resume with `fluentcv validate <blah>`.
 - **Emit line and column info** for syntax errors during validation of FRESH and JRS resumes.
 - **FRESH themes now embed CSS into HTML formats by default** so that the HTML resume output doesn't have an external CSS file dependency by default. Users can specify normal linked stylesheets by setting `--css=link`.
 - **Renamed fluent-themes repo to fresh-themes** in keeping with the other parts of the project.
@@ -362,7 +453,7 @@ theme.
 
 ### Fixed
 
-- Fixed the `new` command: Generate a new FRESH-format resume with `hackmyresume new resume.json` or a new JSON Resume with `hackmyresume new resume.json -f jrs`.
+- Fixed the `new` command: Generate a new FRESH-format resume with `fluentcv new resume.json` or a new JSON Resume with `fluentcv new resume.json -f jrs`.
 
 ### Added
 
@@ -379,14 +470,14 @@ theme.
 - Make the `TO` keyword optional. If no `TO` keyword is specified (for the `build` and `convert` commands), HMR will assume the last file passed in is the desired output file. So these are equivalent:
 
     ```shell
-    hackmyresume BUILD resume.json TO out/resume.all
-    hackmyresume BUILD resume.json out/resume.all
+    fluentcv BUILD resume.json TO out/resume.all
+    fluentcv BUILD resume.json out/resume.all
     ```
 
     `TO` only needs to be included if you have multipled output files:
 
     ```shell
-     hackmyresume BUILD resume.json TO out1.doc out2.html out3.tex
+     fluentcv BUILD resume.json TO out1.doc out2.html out3.tex
     ```
 
 ## v1.0.1
@@ -399,13 +490,14 @@ theme.
 
 - Initial public 1.0 release.
 
-[i45]: https://github.com/hacksalot/HackMyResume/issues/45
-[i65]: https://github.com/hacksalot/HackMyResume/issues/65
-[i84]: https://github.com/hacksalot/HackMyResume/issues/84
-[i92]: https://github.com/hacksalot/HackMyResume/issues/92
-[i101]: https://github.com/hacksalot/HackMyResume/issues/101
-[i111]: https://github.com/hacksalot/HackMyResume/issues/111
-[fresca]: https://github.com/fluentdesk/FRESCA
-[themes]: https://github.com/fluentdesk/fresh-themes
+[i45]: https://github.com/hacksalot/FluentCV/issues/45
+[i65]: https://github.com/hacksalot/FluentCV/issues/65
+[i84]: https://github.com/hacksalot/FluentCV/issues/84
+[i92]: https://github.com/hacksalot/FluentCV/issues/92
+[i101]: https://github.com/hacksalot/FluentCV/issues/101
+[i111]: https://github.com/hacksalot/FluentCV/issues/111
+[fresca]: https://github.com/fresh-standard/fresh-resume-schema
+[themes]: https://github.com/fresh-standard/fresh-themes
 [awefork]: https://github.com/fluentdesk/Awesome-CV
 [acv]: https://github.com/posquit0/Awesome-CV
+[ftt]: https://github.com/fresh-standard/fresh-test-themes

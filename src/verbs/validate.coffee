@@ -36,7 +36,7 @@ _validate = (sources, unused, opts)  ->
 
   validator = require 'is-my-json-valid'
   schemas =
-    fresh: require 'fresca'
+    fresh: require 'fresh-resume-schema'
     jars: require '../core/resume.json'
 
   results = _.map sources, (t)  ->
@@ -83,7 +83,7 @@ _validateOne = (t, validator, schemas, opts) ->
 
     # If failure, package JSON read/parse errors
     else
-      if obj.ex.operation == 'parse'
+      if obj.ex.op == 'parse'
         errCode = HMSTATUS.parseError
         ret.status = 'broken'
       else
@@ -94,9 +94,9 @@ _validateOne = (t, validator, schemas, opts) ->
         inner: obj.ex.inner,
         quiet: errCode == HMSTATUS.readError
 
-  catch
+  catch err
     # Package any unexpected exceptions
-    ret.error = fluenterror: HMSTATUS.validateError, inner: _error
+    ret.error = fluenterror: HMSTATUS.validateError, inner: err
 
   @stat HMEVENT.afterValidate, ret
   ret

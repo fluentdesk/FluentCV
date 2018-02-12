@@ -1,12 +1,22 @@
-
-/**
-Definition of the `main` function.
-@module cli/main
-@license MIT. See LICENSE.md for details.
- */
-
 (function() {
-  var Command, EXTEND, FS, HME, HMR, HMSTATUS, M2C, OUTPUT, PAD, PATH, PKG, StringUtils, _, _err, _exitCallback, _opts, _out, _title, chalk, execute, executeFail, executeSuccess, initOptions, initialize, loadOptions, logMsg, main, printf, safeLoadJSON, splitSrcDest;
+  /**
+  Definition of the `main` function.
+  @module cli/main
+  @license MIT. See LICENSE.md for details.
+  */
+  /* Invoke a HackMyResume verb. */
+  /* Success handler for verb invocations. Calls process.exit by default */
+  /* Init options prior to setting up command infrastructure. */
+  /* Massage command-line args and setup Commander.js. */
+  /*
+  Initialize HackMyResume options.
+  TODO: Options loading is a little hacky, for two reasons:
+  - Commander.js idiosyncracies
+  - Need to accept JSON inputs from the command line.
+  */
+  /* Simple logging placeholder. */
+  /* Split multiple command-line filenames by the 'TO' keyword */
+  var Command, EXTEND, FS, HMR, HMSTATUS, M2C, OUTPUT, PAD, PATH, PKG, _, _err, _exitCallback, _opts, _out, _title, chalk, execute, executeFail, executeSuccess, initOptions, initialize, loadOptions, logMsg, printf, safeLoadJSON, splitSrcDest;
 
   HMR = require('../index');
 
@@ -22,12 +32,9 @@ Definition of the `main` function.
 
   HMSTATUS = require('../core/status-codes');
 
-  HME = require('../core/event-codes');
-
   safeLoadJSON = require('../utils/safe-json-loader');
 
-  StringUtils = require('../utils/string.js');
-
+  //StringUtils = require '../utils/string.js'
   _ = require('underscore');
 
   OUTPUT = require('./out');
@@ -42,7 +49,7 @@ Definition of the `main` function.
 
   _opts = {};
 
-  _title = chalk.white.bold('\n*** HackMyResume v' + PKG.version + ' ***');
+  _title = chalk.white.bold('\n*** FluentCV v' + PKG.version + ' ***');
 
   _out = new OUTPUT(_opts);
 
@@ -50,44 +57,61 @@ Definition of the `main` function.
 
   _exitCallback = null;
 
-
   /*
   A callable implementation of the HackMyResume CLI. Encapsulates the command
   line interface as a single method accepting a parameter array.
   @alias module:cli/main.main
   @param rawArgs {Array} An array of command-line parameters. Will either be
   process.argv (in production) or custom parameters (in test).
-   */
-
-  main = module.exports = function(rawArgs, exitCallback) {
+  */
+  module.exports = function(rawArgs, exitCallback) {
     var args, initInfo, program;
     initInfo = initialize(rawArgs, exitCallback);
+    if (initInfo === null) {
+      return;
+    }
     args = initInfo.args;
-    program = new Command('hackmyresume').version(PKG.version).description(chalk.yellow.bold('*** HackMyResume ***')).option('-s --silent', 'Run in silent mode').option('--no-color', 'Disable colors').option('--color', 'Enable colors').option('-d --debug', 'Enable diagnostics', false).option('-a --assert', 'Treat warnings as errors', false).option('-v --version', 'Show the version').allowUnknownOption();
+    // Create the top-level (application) command...
+    program = new Command('fluentcv').version(PKG.version).description(chalk.yellow.bold('*** FluentCV ***')).option('-s --silent', 'Run in silent mode').option('--no-color', 'Disable colors').option('--color', 'Enable colors').option('-d --debug', 'Enable diagnostics', false).option('-a --assert', 'Treat warnings as errors', false).option('-v --version', 'Show the version').allowUnknownOption();
     program.jsonArgs = initInfo.options;
-    program.command('new')["arguments"]('<sources...>').option('-f --format <fmt>', 'FRESH or JRS format', 'FRESH').alias('create').description('Create resume(s) in FRESH or JSON RESUME format.').action((function(sources) {
+    // Create the NEW command
+    program.command('new').arguments('<sources...>').option('-f --format <fmt>', 'FRESH or JRS format', 'FRESH').alias('create').description('Create resume(s) in FRESH or JSON RESUME format.').action((function(sources) {
       execute.call(this, sources, [], this.opts(), logMsg);
     }));
-    program.command('validate')["arguments"]('<sources...>').description('Validate a resume in FRESH or JSON RESUME format.').action(function(sources) {
+    // Create the VALIDATE command
+    program.command('validate').arguments('<sources...>').description('Validate a resume in FRESH or JSON RESUME format.').action(function(sources) {
       execute.call(this, sources, [], this.opts(), logMsg);
     });
-    program.command('convert').description('Convert a resume to/from FRESH or JSON RESUME format.').action(function() {
+    // Create the CONVERT command
+    program.command('convert').description('Convert a resume to/from FRESH or JSON RESUME format.').option('-f --format <fmt>', 'FRESH or JRS format and optional version', void 0).action(function() {
       var x;
       x = splitSrcDest.call(this);
       execute.call(this, x.src, x.dst, this.opts(), logMsg);
     });
-    program.command('analyze')["arguments"]('<sources...>').description('Analyze one or more resumes.').action(function(sources) {
+    // Create the ANALYZE command
+    program.command('analyze').arguments('<sources...>').option('--private', 'Include resume fields marked as private', false).description('Analyze one or more resumes.').action(function(sources) {
       execute.call(this, sources, [], this.opts(), logMsg);
     });
-    program.command('peek')["arguments"]('<sources...>').description('Peek at a resume field or section').action(function(sources, sectionOrField) {
+    // Create the PEEK command
+    //.action(( sources, sectionOrField ) ->
+    program.command('peek').arguments('<sources...>').description('Peek at a resume field or section').action(function(sources) {
       var dst;
-      dst = sources && sources.length > 1 ? [sources.pop()] : [];
+      dst = (sources && sources.length > 1) ? [sources.pop()] : [];
       execute.call(this, sources, dst, this.opts(), logMsg);
     });
-    program.command('build').alias('generate').option('-t --theme <theme>', 'Theme name or path').option('-n --no-prettify', 'Disable HTML prettification', true).option('-c --css <option>', 'CSS linking / embedding').option('-p --pdf <engine>', 'PDF generation engine').option('--no-sort', 'Sort resume sections by date', false).option('--tips', 'Display theme tips and warnings.', false).description('Generate resume to multiple formats').action(function(sources, targets, options) {
+    // Create the BUILD command
+    //.action(( sources, targets, options ) ->
+    program.command('build').alias('generate').option('-t --theme <theme>', 'Theme name or path').option('-n --no-prettify', 'Disable HTML prettification', true).option('-c --css <option>', 'CSS linking / embedding').option('-p --pdf <engine>', 'PDF generation engine').option('--no-sort', 'Sort resume sections by date', false).option('--tips', 'Display theme tips and warnings.', false).option('--private', 'Include resume fields marked as private', false).option('--no-escape', 'Turn off encoding in Handlebars themes.', false).description('Generate resume to multiple formats').action(function() {
       var x;
       x = splitSrcDest.call(this);
       execute.call(this, x.src, x.dst, this.opts(), logMsg);
+    });
+    // Create the HELP command
+    program.command('help').arguments('[command]').description('Get help on a FluentCV command').action(function(cmd) {
+      var manPage;
+      cmd = cmd || 'use';
+      manPage = FS.readFileSync(PATH.join(__dirname, 'help/' + cmd + '.txt'), 'utf8');
+      _out.log(M2C(manPage, 'white', 'yellow.bold'));
     });
     program.parse(args);
     if (!program.args.length) {
@@ -97,40 +121,63 @@ Definition of the `main` function.
     }
   };
 
-
-  /* Massage command-line args and setup Commander.js. */
-
   initialize = function(ar, exitCallback) {
     var o;
     _exitCallback = exitCallback || process.exit;
     o = initOptions(ar);
+    if (o.ex) {
+      _err.init(false, true, false);
+      if (o.ex.op === 'parse') {
+        _err.err({
+          fluenterror: o.ex.op === 'parse' ? HMSTATUS.invalidOptionsFile : HMSTATUS.optionsFileNotFound,
+          inner: o.ex.inner,
+          quit: true
+        });
+      } else {
+        _err.err({
+          fluenterror: HMSTATUS.optionsFileNotFound,
+          inner: o.ex.inner,
+          quit: true
+        });
+      }
+      return null;
+    }
     o.silent || logMsg(_title);
+    // Emit debug prelude if --debug was specified
     if (o.debug) {
       _out.log(chalk.cyan('The -d or --debug switch was specified. DEBUG mode engaged.'));
       _out.log('');
       _out.log(chalk.cyan(PAD('  Platform:', 25, null, PAD.RIGHT)) + chalk.cyan.bold(process.platform === 'win32' ? 'windows' : process.platform));
       _out.log(chalk.cyan(PAD('  Node.js:', 25, null, PAD.RIGHT)) + chalk.cyan.bold(process.version));
-      _out.log(chalk.cyan(PAD('  HackMyResume:', 25, null, PAD.RIGHT)) + chalk.cyan.bold('v' + PKG.version));
+      _out.log(chalk.cyan(PAD('  FluentCV:', 25, null, PAD.RIGHT)) + chalk.cyan.bold('v' + PKG.version));
       _out.log(chalk.cyan(PAD('  FRESCA:', 25, null, PAD.RIGHT)) + chalk.cyan.bold(PKG.dependencies.fresca));
+      //_out.log(chalk.cyan(PAD('  fresh-themes:',25, null, PAD.RIGHT)) + chalk.cyan.bold( PKG.dependencies['fresh-themes'] ))
+      //_out.log(chalk.cyan(PAD('  fresh-jrs-converter:',25, null, PAD.RIGHT)) + chalk.cyan.bold( PKG.dependencies['fresh-jrs-converter'] ))
       _out.log('');
     }
     _err.init(o.debug, o.assert, o.silent);
-    if (o.verb && !HMR.verbs[o.verb] && !HMR.alias[o.verb]) {
+    // Handle invalid verbs here (a bit easier here than in commander.js)...
+    if (o.verb && !HMR.verbs[o.verb] && !HMR.alias[o.verb] && o.verb !== 'help') {
       _err.err({
         fluenterror: HMSTATUS.invalidCommand,
         quit: true,
         attempted: o.orgVerb
       }, true);
     }
-    Command.prototype.missingArgument = function(name) {
-      _err.err({
-        fluenterror: this.name() !== 'new' ? HMSTATUS.resumeNotFound : HMSTATUS.createNameMissing
-      }, true);
+    // Override the .missingArgument behavior
+    Command.prototype.missingArgument = function(/* unused */) {
+      if (this.name() !== 'help') {
+        _err.err({
+          verb: this.name(),
+          fluenterror: HMSTATUS.resumeNotFound
+        }, true);
+      }
     };
+    // Override the .helpInformation behavior
     Command.prototype.helpInformation = function() {
       var manPage;
-      manPage = FS.readFileSync(PATH.join(__dirname, 'use.txt'), 'utf8');
-      return chalk.green.bold(manPage);
+      manPage = FS.readFileSync(PATH.join(__dirname, 'help/use.txt'), 'utf8');
+      return M2C(manPage, 'white', 'yellow');
     };
     return {
       args: o.args,
@@ -138,17 +185,16 @@ Definition of the `main` function.
     };
   };
 
-
-  /* Init options prior to setting up command infrastructure. */
-
   initOptions = function(ar) {
     oVerb;
-    var args, cleanArgs, inf, isAssert, isDebug, isMono, isSilent, oJSON, oVerb, optStr, optsIdx, verb, vidx;
+    /* jshint ignore:end */
+    var args, cleanArgs, inf, isAssert, isDebug, isMono, isNoEscape, isSilent, oJSON, oVerb, optStr, optsIdx, verb, vidx;
     verb = '';
     args = ar.slice();
     cleanArgs = args.slice(2);
     oJSON;
     if (cleanArgs.length) {
+      // Support case-insensitive sub-commands (build, generate, validate, etc)
       vidx = _.findIndex(cleanArgs, function(v) {
         return v[0] !== '-';
       });
@@ -156,6 +202,7 @@ Definition of the `main` function.
         oVerb = cleanArgs[vidx];
         verb = args[vidx + 2] = oVerb.trim().toLowerCase();
       }
+      // Remove --options --opts -o and process separately
       optsIdx = _.findIndex(cleanArgs, function(v) {
         return v === '-o' || v === '--options' || v === '--opts';
       });
@@ -163,21 +210,23 @@ Definition of the `main` function.
         optStr = cleanArgs[optsIdx + 1];
         args.splice(optsIdx + 2, 2);
         if (optStr && (optStr = optStr.trim())) {
+          //var myJSON = JSON.parse(optStr);
           if (optStr[0] === '{') {
-
+            // TODO: remove use of evil(). - hacksalot
             /* jshint ignore:start */
-            oJSON = eval('(' + optStr + ')');
-
-            /* jshint ignore:end */
+            oJSON = eval('(' + optStr + ')'); // jshint ignore:line <-- no worky
           } else {
             inf = safeLoadJSON(optStr);
             if (!inf.ex) {
               oJSON = inf.json;
+            } else {
+              return inf;
             }
           }
         }
       }
     }
+    // Grab the --debug flag, --silent, --assert and --no-color flags
     isDebug = _.some(args, function(v) {
       return v === '-d' || v === '--debug';
     });
@@ -190,11 +239,15 @@ Definition of the `main` function.
     isMono = _.some(args, function(v) {
       return v === '--no-color';
     });
+    isNoEscape = _.some(args, function(v) {
+      return v === '--no-escape';
+    });
     return {
       color: !isMono,
       debug: isDebug,
       silent: isSilent,
       assert: isAssert,
+      noescape: isNoEscape,
       orgVerb: oVerb,
       verb: verb,
       json: oJSON,
@@ -202,38 +255,44 @@ Definition of the `main` function.
     };
   };
 
-
-  /* Invoke a HackMyResume verb. */
-
   execute = function(src, dst, opts, log) {
     var prom, v;
+    // Create the verb
     v = new HMR.verbs[this.name()]();
+    // Initialize command-specific options
     loadOptions.call(this, opts, this.parent.jsonArgs);
+    // Set up error/output handling
     _opts.errHandler = v;
     _out.init(_opts);
+    // Hook up event notifications
     v.on('hmr:status', function() {
-      return _out["do"].apply(_out, arguments);
+      return _out.do.apply(_out, arguments);
     });
     v.on('hmr:error', function() {
       return _err.err.apply(_err, arguments);
     });
+    // Invoke the verb using promise syntax
     prom = v.invoke.call(v, src, dst, _opts, log);
     prom.then(executeSuccess, executeFail);
   };
 
+  executeSuccess = function(/*obj*/) {};
 
-  /* Success handler for verb invocations. Calls process.exit by default */
-
-  executeSuccess = function(obj) {};
-
-
+  // Can't call _exitCallback here (process.exit) when PDF is running in BK
+  //_exitCallback 0; return
   /* Failure handler for verb invocations. Calls process.exit by default */
-
   executeFail = function(err) {
     var finalErrorCode, msgs;
+    //console.dir err
     finalErrorCode = -1;
     if (err) {
-      finalErrorCode = err.fluenterror ? err.fluenterror : err;
+      if (err.fluenterror) {
+        finalErrorCode = err.fluenterror;
+      } else if (err.length) {
+        finalErrorCode = err[0].fluenterror;
+      } else {
+        finalErrorCode = err;
+      }
     }
     if (_opts.debug) {
       msgs = require('./msg').errors;
@@ -245,19 +304,16 @@ Definition of the `main` function.
     _exitCallback(finalErrorCode);
   };
 
-
-  /*
-  Initialize HackMyResume options.
-  TODO: Options loading is a little hacky, for two reasons:
-    - Commander.js idiosyncracies
-    - Need to accept JSON inputs from the command line.
-   */
-
   loadOptions = function(o, cmdO) {
+    // o and this.opts() seem to be the same (command-specific options)
+
+    // Load the specified options file (if any) and apply options
     if (cmdO) {
       o = EXTEND(true, o, cmdO);
     }
+    // Merge in command-line options
     o = EXTEND(true, o, this.opts());
+    // Kludge parent-level options until piping issue is resolved
     if (this.parent.silent !== void 0 && this.parent.silent !== null) {
       o.silent = this.parent.silent;
     }
@@ -277,9 +333,6 @@ Definition of the `main` function.
     EXTEND(true, _opts, o);
   };
 
-
-  /* Split multiple command-line filenames by the 'TO' keyword */
-
   splitSrcDest = function() {
     var params, splitAt;
     params = this.parent.args.filter(function(j) {
@@ -287,13 +340,17 @@ Definition of the `main` function.
     });
     if (params.length === 0) {
       throw {
+        //tmpName = @name()
         fluenterror: HMSTATUS.resumeNotFound,
+        verb: this.name(),
         quit: true
       };
     }
+    // Find the TO keyword, if any
     splitAt = _.findIndex(params, function(p) {
       return p.toLowerCase() === 'to';
     });
+    // TO can't be the last keyword
     if (splitAt === params.length - 1 && splitAt !== -1) {
       logMsg(chalk.yellow('Please ') + chalk.yellow.bold('specify an output file') + chalk.yellow(' for this operation or ') + chalk.yellow.bold('omit the TO keyword') + chalk.yellow('.'));
       return;
@@ -304,10 +361,8 @@ Definition of the `main` function.
     };
   };
 
-
-  /* Simple logging placeholder. */
-
   logMsg = function() {
+    // eslint-disable-next-line no-console
     return _opts.silent || console.log.apply(console.log, arguments);
   };
 

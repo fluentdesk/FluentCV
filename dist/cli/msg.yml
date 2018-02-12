@@ -109,3 +109,33 @@ errors:
     msg: Exiting with status code **%s**.
   validateError:
     msg: "An error occurred during validation:\n%s"
+  invalidOptionsFile:
+    msg:
+      - "The specified options file is invalid:\n"
+      - "\nMake sure the options file contains valid JSON."
+  optionsFileNotFound:
+    msg: "The specified options file is missing or inaccessible."
+  unknownSchema:
+    msg:
+      - "Unknown resume schema. Did you specify a valid FRESH or JRS resume?"
+      - |
+          At a minimum, a FRESH resume must include a "name" field and a "meta"
+          property.
+
+          "name": "John Doe",
+          "meta": {
+            "format": "FRESH@0.1.0"
+          }
+
+          JRS-format resumes must include a "basics" section with a "name":
+
+          "basics": {
+            "name": "John Doe"
+          }
+  themeHelperLoad:
+    msg: >-
+      An error occurred while attempting to load the '%s' theme helper. Is the
+      theme correctly installed?
+    dummy: dontcare
+  invalidSchemaVersion:
+    msg: "'%s' is not recognized as a valid schema version."

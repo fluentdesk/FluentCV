@@ -3,7 +3,7 @@
 
 
 /**
-Command-line interface (CLI) for FluentCV (CLI).
+Command-line interface (CLI) for FluentCV.
 @license MIT. See LICENSE.md for details.
 @module index.js
 */

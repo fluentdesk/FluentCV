@@ -1,16 +1,18 @@
-
-/**
-Definition of the ResumeFactory class.
-@license MIT. See LICENSE.md for details.
-@module core/resume-factory
- */
-
 (function() {
-  var FS, HACKMYSTATUS, HME, ResumeConverter, ResumeFactory, SyntaxErrorEx, _, _parse, chalk;
+  /**
+  Definition of the ResumeFactory class.
+  @license MIT. See LICENSE.md for details.
+  @module core/resume-factory
+  */
+  /**
+  A simple factory class for FRESH and JSON Resumes.
+  @class ResumeFactory
+  */
+  var FS, HME, HMS, ResumeConverter, ResumeFactory, SyntaxErrorEx, _, _parse, chalk, resumeDetect;
 
   FS = require('fs');
 
-  HACKMYSTATUS = require('./status-codes');
+  HMS = require('./status-codes');
 
   HME = require('./event-codes');
 
@@ -22,22 +24,17 @@ Definition of the ResumeFactory class.
 
   _ = require('underscore');
 
+  resumeDetect = require('../utils/resume-detector');
+
   require('string.prototype.startswith');
 
-
-  /**
-  A simple factory class for FRESH and JSON Resumes.
-  @class ResumeFactory
-   */
-
   ResumeFactory = module.exports = {
-
     /**
     Load one or more resumes from disk.
-    
+
     @param {Object} opts An options object with settings for the factory as well
     as passthrough settings for FRESHResume or JRSResume. Structure:
-    
+
         {
           format: 'FRESH',    // Format to open as. ('FRESH', 'JRS', null)
           objectify: true,    // FRESH/JRSResume or raw JSON?
@@ -45,32 +42,42 @@ Definition of the ResumeFactory class.
             sort: false
           }
         }
-     */
+
+    */
     load: function(sources, opts, emitter) {
       return sources.map(function(src) {
         return this.loadOne(src, opts, emitter);
       }, this);
     },
-
-    /** Load a single resume from disk. */
+    /** Load a single resume from disk.  */
     loadOne: function(src, opts, emitter) {
-      var ResumeClass, info, isFRESH, json, objectify, orgFormat, rez, toFormat;
-      toFormat = opts.format;
-      objectify = opts.objectify;
+      var ResumeClass, info, json, orgFormat, reqLib, rez, toFormat;
+      toFormat = opts.format; // Can be null
+      
+      // Get the destination format. Can be 'fresh', 'jrs', or null/undefined.
       toFormat && (toFormat = toFormat.toLowerCase().trim());
+      // Load and parse the resume JSON
       info = _parse(src, opts, emitter);
       if (info.fluenterror) {
         return info;
       }
+      // Determine the resume format: FRESH or JRS
       json = info.json;
-      isFRESH = json.meta && json.meta.format && json.meta.format.startsWith('FRESH@');
-      orgFormat = isFRESH ? 'fresh' : 'jrs';
+      orgFormat = resumeDetect(json);
+      if (orgFormat === 'unk') {
+        info.fluenterror = HMS.unknownSchema;
+        return info;
+      }
+      // Convert between formats if necessary
       if (toFormat && (orgFormat !== toFormat)) {
         json = ResumeConverter['to' + toFormat.toUpperCase()](json);
       }
+      // Objectify the resume, that is, convert it from JSON to a FRESHResume
+      // or JRSResume object.
       rez = null;
-      if (objectify) {
-        ResumeClass = require('../core/' + (toFormat || orgFormat) + '-resume');
+      if (opts.objectify) {
+        reqLib = '../core/' + (toFormat || orgFormat) + '-resume';
+        ResumeClass = require(reqLib);
         rez = new ResumeClass().parseJSON(json, opts.inner);
         rez.i().file = src;
       }
@@ -83,9 +90,10 @@ Definition of the ResumeFactory class.
   };
 
   _parse = function(fileName, opts, eve) {
-    var orgFormat, rawData, ret;
+    var err, orgFormat, rawData, ret;
     rawData = null;
     try {
+      // Read the file
       eve && eve.stat(HME.beforeRead, {
         file: fileName
       });
@@ -107,10 +115,12 @@ Definition of the ResumeFactory class.
         fmt: orgFormat
       });
       return ret;
-    } catch (_error) {
+    } catch (error) {
+      err = error;
       return {
-        fluenterror: rawData ? HACKMYSTATUS.parseError : HACKMYSTATUS.readError,
-        inner: _error,
+        // Can be ENOENT, EACCES, SyntaxError, etc.
+        fluenterror: rawData ? HMS.parseError : HMS.readError,
+        inner: err,
         raw: rawData,
         file: fileName
       };

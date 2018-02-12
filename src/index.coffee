@@ -1,7 +1,7 @@
 ###*
-External API surface for HackMyResume.
+External API surface for FluentCV.
 @license MIT. See LICENSE.md for details.
-@module hackmycore/index
+@module fluentcv/index
 ###
 
 

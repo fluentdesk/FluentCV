@@ -4,14 +4,14 @@ FluentCV
 [![Latest release][img-release]][latest-release]
 [![Build status (MASTER)][img-master]][travis-url-master]
 [![Build status (DEV)][img-dev]][travis-url-dev]
-[![Join the chat at https://gitter.im/hacksalot/HackMyResume](https://badges.gitter.im/hacksalot/HackMyResume.svg)](https://gitter.im/hacksalot/HackMyResume?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+[![Join the chat at https://gitter.im/hacksalot/HackMyResume][badge]][gh]
 
 *Create polished résumés and CVs in multiple formats from your command line or
 shell. Author in clean Markdown and JSON, export to Word, HTML, PDF, LaTeX,
 plain text, and other arbitrary formats. Fight the power, save trees. Compatible
 with [FRESH][fresca] and [JRS][6] resumes.*
 
-![](assets/hackmyresume.cli.1.6.0.png)
+![](assets/hmr_build.png)
 
 FluentCV is a dev-friendly, local-only Swiss Army knife for resumes and CVs. It
 is the corporate-friendly fork of [HackMyResume][hmr]&mdash;same tool, different
@@ -27,6 +27,8 @@ metrics.
 
 FluentCV is built with Node.js and runs on recent versions of OS X, Linux,
 or Windows. View the [FAQ](FAQ.md).
+
+![](assets/hmr_analyze.png)
 
 ## Features
 
@@ -57,9 +59,9 @@ Install the latest stable version of FluentCV with NPM:
 FluentCV tries not to impose a specific PDF engine requirement on
 the user, but will instead work with whatever PDF engines you have installed.
 
-Currently, FluentCV's PDF generation requires either [Phantom.js][2] or
-[wkhtmltopdf][3] to be installed on your system and the `phantomjs` and/or
-`wkhtmltopdf` binaries to be accessible on your PATH. This is an optional
+Currently, HackMyResume's PDF generation requires one of [Phantom.js][2],
+[wkhtmltopdf][3], or [WeasyPrint][11] to be installed on your system and the
+corresponding binary to be accessible on your PATH. This is an optional
 requirement for users who care about PDF formats. If you don't care about PDF
 formats, skip this step.
 
@@ -312,19 +314,21 @@ and formats with the `--pdf none` switch.*
 FluentCV takes a unique approach to PDF generation. Instead of enforcing
 a specific PDF engine on users, FluentCV will attempt to work with whatever
 PDF engine you have installed through the engine's command-line interface (CLI).
-Currently that means one or both of...
+Currently that means any of...
 
 - [wkhtmltopdf][3]
-- [Phantom.js][3]
+- [Phantom.js][2]
+- [WeasyPrint][11]
 
 ..with support for other engines planned in the future. But for now, **one or
-both of these engines must be installed and accessible on your PATH in order to
-generate PDF resumes with FluentCV**. That means you should be able to
+more of these engines must be installed and accessible on your PATH in order
+to generate PDF resumes with FluentCV**. That means you should be able to
 invoke either of these tools directly from your shell or terminal without error:
 
 ```bash
 wkhtmltopdf input.html output.pdf
 phantomjs script.js input.html output.pdf
+weasyprint input.html output.pdf
 ```
 
 Assuming you've installed one or both of these engines on your system, you can
@@ -334,6 +338,7 @@ tell FluentCV which flavor of PDF generation to use via the `--pdf` option
 ```bash
 fluentcv BUILD resume.json TO out.all --pdf phantom
 fluentcv BUILD resume.json TO out.all --pdf wkhtmltopdf
+fluentcv BUILD resume.json TO out.all --pdf weasyprint
 fluentcv BUILD resume.json TO out.all --pdf none
 ```
 
@@ -477,19 +482,22 @@ fluentcv BUILD resume.json -o path/to/options.json
 The options file can contain any documented FluentCV option, including
 `theme`, `silent`, `debug`, `pdf`, `css`, and other settings.
 
-```javascript
+```json
 {
-  // Set the default theme to "compact"
   "theme": "compact",
-  // Change the "employment" section title text to "Work"
+
   "sectionTitles": {
     "employment": "Work"
+  },
+
+  "wkhtmltopdf": {
+    "margin-top": "20mm"
   }
 }
 ```
 
-If a particular option is specified both on the command line and in an external
-options file, the explicit command-line option takes precedence.
+If an option is specified on both the command line and in an external options
+file, the command-line option wins.
 
 ```bash
 # path/to/options.json specifes the POSITIVE theme
@@ -525,15 +533,80 @@ Use `-d` or `--debug` to force FluentCV to emit a call stack when errors occur.
 In the future, this option will emit detailed error logging.
 
 ```bash
-fluentcv BUILD resume.json -d
-fluentcv ANALYZE resume.json --debug
+fluentcv build resume.json -d
+fluentcv analyze resume.json --debug
 ```
+
+### Disable Encoding
+
+Use the `--no-escape` option to disable encoding in Handlebars themes. Note:
+this option has no effect for non-Handlebars themes.
+
+```bash
+fluentcv build resume.json --no-escape
+```
+
+### Private Resume Fields
+
+Have a gig, education stint, membership, or other relevant history that you'd
+like to hide from *most* (e.g. public) resumes but sometimes show on others? Tag it with
+`"private": true` to omit it from outbound generated resumes by default.
+
+
+```json
+"employment": {
+  "history": [
+    {
+      "employer": "Acme Real Estate"
+    },
+    {
+      "employer": "Area 51 Alien Research Laboratory",
+      "private": true
+    },
+    {
+      "employer": "H&R Block"
+    }
+  ]
+}
+```
+
+Then, when you want a copy of your resume that includes the private gig / stint
+/ etc., tell FluentCV that it's OK to emit private fields. The way you do
+that is with the `--private` switch.
+
+```bash
+fluentcv build resume.json private-resume.all --private
+```
+
+
+### Custom theme helpers
+
+You can attach your own custom Handlebars helpers to a FRESH theme with the
+`helpers` key of your theme's `theme.json` file.
+
+```js
+{
+  "title": "my-cool-theme",
+
+  // ...
+
+  "helpers": [
+    "../path/to/helpers/*.js",
+    "some-other-helper.js"
+  ]
+}
+```
+
+HackMyResume will attempt to load each path or glob and register any specified
+files with [Handlebars.registerHelper][hrh], making them available to your
+theme.
+
 
 ## Contributing
 
 FluentCV is a community-driven free and open source project under the MIT
-License. Contributions are encouraged and we respond to all PRs and issues,
-usually within 24 hours. See [CONTRIBUTING.md][contribute] for details.
+License. Contributions are encouraged and we respond to all PRs and issues in
+time. See [CONTRIBUTING.md][contribute] for details.
 
 ## License
 
@@ -549,8 +622,9 @@ MIT. Go crazy. See [LICENSE.md][1] for details.
 [8]: https://youtu.be/N9wsjroVlu8
 [9]: https://api.jquery.com/jquery.extend/
 [10]: https://github.com/beautify-web/js-beautify
+[11]: http://weasyprint.org/
 [fresh]: https://github.com/fluentdesk/FRESH
-[fresca]: https://github.com/fluentdesk/FRESCA
+[fresca]: https://github.com/fresh-standard/fresh-resume-schema
 [dry]: https://en.wikipedia.org/wiki/Don%27t_repeat_yourself
 [img-release]: https://img.shields.io/github/release/fluentdesk/FluentCV.svg?label=version
 [img-master]: https://img.shields.io/travis/fluentdesk/FluentCV/master.svg
@@ -561,4 +635,7 @@ MIT. Go crazy. See [LICENSE.md][1] for details.
 [contribute]: CONTRIBUTING.md
 [fresh-themes]: https://github.com/fluentdesk/fresh-themes
 [jrst]: https://www.npmjs.com/search?q=jsonresume-theme
+[gh]: https://gitter.im/hacksalot/HackMyResume?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+[badge]: https://badges.gitter.im/hacksalot/HackMyResume.svg
+[hrh]: http://handlebarsjs.com/reference.html#base-registerHelper
 [hmr]: https://github.com/hacksalot/hackmyresume

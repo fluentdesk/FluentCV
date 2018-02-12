@@ -1,0 +1,70 @@
+**FluentCV** | A Swiss Army knife for resumes and CVs
+
+Usage:
+
+   **fluentcv [--version] [--help] [--silent] [--debug]**
+      **[--options] [--no-colors] <command> [<args>]**
+
+Commands: (type "fluentcv help COMMAND" for details)
+
+   **BUILD**         Build your resume to the destination format(s).
+   **ANALYZE**       Analyze your resume for keywords, gaps, and metrics.
+   **VALIDATE**      Validate your resume for errors and typos.
+   **NEW**           Create a new resume in FRESH or JSON Resume format.
+   **CONVERT**       Convert your resume between FRESH and JSON Resume.
+   **PEEK**          View a specific field or element on your resume.
+   **HELP**          View help on a specific FluentCV command.
+
+Common Tasks:
+
+   Generate a resume in a specific format (HTML, Word, PDF, etc.)
+
+      **fluentcv build rez.json to out/rez.html**
+      **fluentcv build rez.json to out/rez.doc**
+      **fluentcv build rez.json to out/rez.pdf**
+      **fluentcv build rez.json to out/rez.txt**
+      **fluentcv build rez.json to out/rez.md**
+      **fluentcv build rez.json to out/rez.png**
+      **fluentcv build rez.json to out/rez.tex**
+
+   Build a resume to ALL available formats:
+
+      **fluentcv build rez.json to out/rez.all**
+
+   Build a resume with a specific theme:
+
+      **fluentcv build rez.json to out/rez.all -t themeName**
+
+   Create a new empty resume:
+
+      **fluentcv new rez.json**
+
+   Convert a resume between FRESH and JRS formats:
+
+      **fluentcv convert rez.json converted.json**
+
+   Analyze a resume for important metrics
+
+      **fluentcv analyze rez.json**
+
+   Find more resume themes:
+
+      **https://www.npmjs.com/search?q=jsonresume-theme**
+      **https://www.npmjs.com/search?q=fresh-theme**
+      **https://github.com/fresh-standard/fresh-themes**
+
+   Validate a resume's structure and syntax:
+
+      **fluentcv validate resume.json**
+
+   View help on a specific command:
+
+      **fluentcv help [build|convert|new|analyze|validate|peek|help]**
+
+   Submit a bug or request:
+
+      **https://githut.com/fluentdesk/FluentCV/issues**
+
+FluentCV is free and open source software published
+under the MIT license. For more information, visit the
+FluentCV website or GitHub project page.

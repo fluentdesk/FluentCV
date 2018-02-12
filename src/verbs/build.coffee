@@ -63,7 +63,10 @@ _build = ( src, dst, opts ) ->
 
   # Load input resumes as JSON...
   sheetObjects = ResumeFactory.load src,
-    format: null, objectify: false, quit: true, inner: { sort: _opts.sort }
+    format: null, objectify: false, quit: true, inner: {
+      sort: _opts.sort
+      private: _opts.private
+    }
   , @
 
   # Explicit check for any resume loading errors...
@@ -87,10 +90,10 @@ _build = ( src, dst, opts ) ->
       return
     theme = _opts.themeObj = _loadTheme tFolder
     _addFreebieFormats theme
-  catch
+  catch err
     newEx =
       fluenterror: HMSTATUS.themeLoad
-      inner: _error
+      inner: err
       attempted: _opts.theme
       quit: true
     @err HMSTATUS.themeLoad, newEx
@@ -130,7 +133,7 @@ _build = ( src, dst, opts ) ->
   @stat HMEVENT.applyTheme, r: rez, theme: theme
 
   # Load the resume into a FRESHResume or JRSResume object
-  _rezObj = new (RTYPES[ toFormat ])().parseJSON( rez );
+  _rezObj = new (RTYPES[ toFormat ])().parseJSON( rez, private: _opts.private );
 
   # Expand output resumes...
   targets = _expand dst, theme
@@ -163,10 +166,11 @@ _build = ( src, dst, opts ) ->
 Prepare for a BUILD run.
 ###
 _prep = ( src, dst, opts ) ->
-
   # Cherry-pick options //_opts = extend( true, _opts, opts );
   _opts.theme = (opts.theme && opts.theme.toLowerCase().trim()) || 'modern';
   _opts.prettify = opts.prettify is true
+  _opts.private = opts.private is true
+  _opts.noescape = opts.noescape is true
   _opts.css = opts.css
   _opts.pdf = opts.pdf
   _opts.wrap = opts.wrap || 60
@@ -176,6 +180,7 @@ _prep = ( src, dst, opts ) ->
   _opts.noTips = opts.noTips
   _opts.debug = opts.debug
   _opts.sort = opts.sort
+  _opts.wkhtmltopdf = opts.wkhtmltopdf
   that = @
 
   # Set up callbacks for internal generators
@@ -329,31 +334,68 @@ _expand = ( dst, theTheme ) ->
 Verify the specified theme name/path.
 ###
 _verifyTheme = ( themeNameOrPath ) ->
-  tFolder = PATH.join(
-    parsePath( require.resolve('fresh-themes') ).dirname,
-    '/themes/',
-    themeNameOrPath
-  )
-  exists = require('path-exists').sync
-  if !exists( tFolder )
+
+  # First, see if this is one of the predefined FRESH themes. There are only a
+  # handful of these, but they may change over time, so we need to query
+  # the official source of truth: the fresh-themes repository, which mounts the
+  # themes conveniently by name to the module object, and which is embedded
+  # locally inside the HackMyResume installation.
+  themesObj = require 'fresh-themes'
+  if _.has themesObj.themes, themeNameOrPath
+    tFolder = PATH.join(
+      parsePath( require.resolve('fresh-themes') ).dirname,
+      '/themes/',
+      themeNameOrPath
+    )
+  else
+  # Otherwsie it's a path to an arbitrary FRESH or JRS theme sitting somewhere
+  # on the user's system (or, in the future, at a URI).
     tFolder = PATH.resolve themeNameOrPath
-    if !exists tFolder
-      return fluenterror: HMSTATUS.themeNotFound, data: _opts.theme
-  tFolder
+
+  # In either case, make sure the theme folder exists
+  exists = require('path-exists').sync
+  if exists tFolder
+    tFolder
+  else
+    fluenterror: HMSTATUS.themeNotFound, data: _opts.theme
 
 
 
 ###*
 Load the specified theme, which could be either a FRESH theme or a JSON Resume
-theme.
+theme (or both).
 ###
 _loadTheme = ( tFolder ) ->
 
+  themeJsonPath = PATH.join tFolder, 'theme.json' # [^1]
+  exists = require('path-exists').sync
+
   # Create a FRESH or JRS theme object
   theTheme =
-    if _opts.theme.indexOf('jsonresume-theme-') > -1
-    then new JRSTheme().open(tFolder) else new FRESHTheme().open( tFolder );
+    if exists themeJsonPath
+    then new FRESHTheme().open tFolder
+    else new JRSTheme().open tFolder
 
   # Cache the theme object
   _opts.themeObj = theTheme;
   theTheme
+
+
+# FOOTNOTES
+# ------------------------------------------------------------------------------
+# [^1] We don't know ahead of time whether this is a FRESH or JRS theme.
+#      However, all FRESH themes have a theme.json file, so we'll use that as a
+#      canary for now, as an interim solution.
+#
+#      Unfortunately, with the exception of FRESH's theme.json, both FRESH and
+#      JRS themes are free-form and don't have a ton of reliable distinguishing
+#      marks, which makes a simple task like ad hoc theme detection harder than
+#      it should be to do cleanly.
+#
+#      Another complicating factor is that it's possible for a theme to be BOTH.
+#      That is, a single set of theme files can serve as a FRESH theme -and- a
+#      JRS theme.
+#
+#      TODO: The most robust way to deal with all these issues is with a strong
+#      theme validator. If a theme structure validates as a particular theme
+#      type, then for all intents and purposes, it IS a theme of that type.

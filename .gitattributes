@@ -1,9 +1,11 @@
 # Auto detect text files and perform LF normalization
+
 * text=auto
 *.js text eol=lf
 *.json text eol=lf
 
 # Standard to msysgit
+
 *.doc	 diff=astextplain
 *.DOC	 diff=astextplain
 *.docx diff=astextplain
@@ -14,3 +16,7 @@
 *.PDF	 diff=astextplain
 *.rtf	 diff=astextplain
 *.RTF	 diff=astextplain
+
+# Git LFS
+
+*.ai filter=lfs diff=lfs merge=lfs -text

@@ -24,7 +24,9 @@ READFILES = require 'recursive-readdir-sync'
 @class FRESHTheme ###
 class FRESHTheme
 
-
+  constructor: () ->
+    @baseFolder = 'src'
+    return
 
   ### Open and parse the specified theme. ###
   open: ( themeFolder ) ->
@@ -43,7 +45,7 @@ class FRESHTheme
     if themeInfo.ex
       throw
         fluenterror:
-          if themeInfo.ex.operation == 'parse'
+          if themeInfo.ex.op == 'parse'
           then HMSTATUS.parseError
           else HMSTATUS.readError
       inner: themeInfo.ex.inner
@@ -57,9 +59,23 @@ class FRESHTheme
     if @inherits
       cached = { }
       _.each @inherits, (th, key) ->
-        themesFolder = require.resolve 'fresh-themes'
-        d = parsePath( themeFolder ).dirname
-        themePath = PATH.join d, th
+        # First, see if this is one of the predefined FRESH themes. There are
+        # only a handful of these, but they may change over time, so we need to
+        # query the official source of truth: the fresh-themes repository, which
+        # mounts the themes conveniently by name to the module object, and which
+        # is embedded locally inside the HackMyResume installation.
+        # TODO: merge this code with
+        themesObj = require 'fresh-themes'
+        if _.has themesObj.themes, th
+          themePath = PATH.join(
+            parsePath( require.resolve('fresh-themes') ).dirname,
+            '/themes/',
+            th
+          )
+        else
+          d = parsePath( th ).dirname
+          themePath = PATH.join d, th
+
         cached[ th ] = cached[th] || new FRESHTheme().open( themePath )
         formatsHash[ key ] = cached[ th ].getFormat( key )
 
@@ -86,7 +102,7 @@ _load = (formatsHash) ->
 
   that = @
   major = false
-  tplFolder = PATH.join @folder, 'src'
+  tplFolder = PATH.join @folder, @baseFolder
 
   copyOnly = ['.ttf','.otf', '.png','.jpg','.jpeg','.pdf']
 
@@ -115,14 +131,20 @@ _load = (formatsHash) ->
         # Found a CSS file without an HTML file in a theme that inherits
         # from another theme. This is the override CSS file.
         that.overrides = { file: cssf.path, data: cssf.data }
-  formatsHash
 
+  # Now, save all the javascript file paths to a theme property.
+  jsFiles = fmts.filter (fmt) -> fmt and (fmt.ext == 'js')
+  @.jsFiles = jsFiles.map (jsf) -> jsf['path']
+
+  formatsHash
 
 
 ### Load a single theme file. ###
 _loadOne = ( absPath, formatsHash, tplFolder ) ->
 
   pathInfo = parsePath absPath
+  return if pathInfo.basename.toLowerCase() == 'theme.json'
+
   absPathSafe = absPath.trim().toLowerCase()
   outFmt = ''
   act = 'copy'

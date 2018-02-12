@@ -4,7 +4,7 @@
 4|--debug
 4|-d
 5|notacommand
-8|new
+3|new
 0|new test/sandbox/cli-test/new-empty-resume.auto.json
 0|new test/sandbox/cli-test/new-empty-resume.jrs.json -f jrs
 0|new test/sandbox/cli-test/new-empty-resume.fresh.json -f fresh
@@ -13,6 +13,10 @@
 0|analyze node_modules/fresh-test-resumes/src/fresh/johnny-trouble.json
 3|convert
 7|convert doesnt-exist.json
+14|convert from.json to.json
+7|convert z1.json z2.json z3.json
+7|convert z1.json z2.json z3.json z4.json
+14|convert z1.json z2.json to z3.json z4.json
 3|validate
 14|validate doesnt-exist.json
 0|validate node_modules/fresh-test-resumes/src/fresh/jane-fullstacker.json
@@ -20,7 +24,7 @@
 14|peek doesnt-exist.json
 14|peek doesnt-exist.json not.a.path
 15|peek node_modules/fresh-test-resumes/src/fresh/johnny-trouble.broken.json
-0|peek test/resumes/jrs-0.0.0/richard-hendriks.json work[0]
+0|peek node_modules/fresh-test-resumes/src/jrs/richard-hendriks.json work[0]
 0|peek node_modules/fresh-test-resumes/src/fresh/jane-fullstacker.json employment.history[1]
 0|peek node_modules/fresh-test-resumes/src/fresh/johnny-trouble.json skills.sets
 3|build

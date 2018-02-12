@@ -1,12 +1,10 @@
-
-/**
-Output routines for HackMyResume.
-@license MIT. See LICENSE.md for details.
-@module cli/out
- */
-
 (function() {
-  var EXTEND, FS, HANDLEBARS, HME, LO, M2C, OutputHandler, PATH, YAML, _, chalk, dbgStyle, pad, printf;
+  /**
+  Output routines for HackMyResume.
+  @license MIT. See LICENSE.md for details.
+  @module cli/out
+  */
+  var EXTEND, FS, HANDLEBARS, HME, M2C, OutputHandler, PATH, YAML, _, chalk, dbgStyle, pad, printf;
 
   chalk = require('chalk');
 
@@ -17,8 +15,6 @@ Output routines for HackMyResume.
   M2C = require('../utils/md2chalk.js');
 
   PATH = require('path');
-
-  LO = require('lodash');
 
   FS = require('fs');
 
@@ -34,30 +30,26 @@ Output routines for HackMyResume.
 
   dbgStyle = 'cyan';
 
-
-  /** A stateful output module. All HMR console output handled here. */
-
-  module.exports = OutputHandler = (function() {
-    function OutputHandler(opts) {
+  OutputHandler = class OutputHandler {
+    constructor(opts) {
       this.init(opts);
       return;
     }
 
-    OutputHandler.prototype.init = function(opts) {
+    init(opts) {
       this.opts = EXTEND(true, this.opts || {}, opts);
       this.msgs = YAML.load(PATH.join(__dirname, 'msg.yml')).events;
-    };
+    }
 
-    OutputHandler.prototype.log = function(msg) {
+    log() {
       var finished;
-      msg = msg || '';
       printf = require('printf');
       finished = printf.apply(printf, arguments);
-      return this.opts.silent || console.log(finished);
-    };
+      return this.opts.silent || console.log(finished); // eslint-disable-line no-console
+    }
 
-    OutputHandler.prototype["do"] = function(evt) {
-      var L, WRAP, adj, info, msg, msgs, numFormats, output, rawTpl, sty, style, suffix, template, that, themeName, tot;
+    do(evt) {
+      var L, adj, info, msg, msgs, numFormats, output, rawTpl, sty, style, suffix, template, that, themeName, tot;
       that = this;
       L = function() {
         return that.log.apply(that, arguments);
@@ -65,6 +57,9 @@ Output routines for HackMyResume.
       switch (evt.sub) {
         case HME.begin:
           return this.opts.debug && L(M2C(this.msgs.begin.msg, dbgStyle), evt.cmd.toUpperCase());
+        //when HME.beforeCreate
+        //L( M2C( this.msgs.beforeCreate.msg, 'green' ), evt.fmt, evt.file )
+        //break;
         case HME.afterCreate:
           L(M2C(this.msgs.beforeCreate.msg, evt.isError ? 'red' : 'green'), evt.fmt, evt.file);
           break;
@@ -86,7 +81,6 @@ Output routines for HackMyResume.
           if (evt.cmd === 'build') {
             themeName = this.theme.name.toUpperCase();
             if (this.opts.tips && (this.theme.message || this.theme.render)) {
-              WRAP = require('word-wrap');
               if (this.theme.message) {
                 L(M2C(this.msgs.afterBuild.msg[0], 'cyan'), themeName);
                 return L(M2C(this.theme.message, 'white'));
@@ -128,7 +122,7 @@ Output routines for HackMyResume.
           output = template(info);
           return this.log(chalk.cyan(output));
         case HME.beforeConvert:
-          return L(M2C(this.msgs.beforeConvert.msg, 'green'), evt.srcFile, evt.srcFmt, evt.dstFile, evt.dstFmt);
+          return L(M2C(this.msgs.beforeConvert.msg, evt.error ? 'red' : 'green'), evt.srcFile, evt.srcFmt, evt.dstFile, evt.dstFmt);
         case HME.afterInlineConvert:
           return L(M2C(this.msgs.afterInlineConvert.msg, 'gray', 'white.dim'), evt.file, evt.fmt);
         case HME.afterValidate:
@@ -159,19 +153,22 @@ Output routines for HackMyResume.
           evt.schema = evt.schema.replace('jars', 'JSON Resume').toUpperCase();
           L(M2C(msgs[0], 'white') + chalk[style].bold(adj), evt.file, evt.schema);
           if (evt.violations) {
-            _.each(evt.violations, function(err, idx) {
+            _.each(evt.violations, function(err) {
               L(chalk.yellow.bold('--> ') + chalk.yellow(err.field.replace('data.', 'resume.').toUpperCase() + ' ' + err.message));
             }, this);
           }
           break;
         case HME.afterPeek:
           sty = evt.error ? 'red' : (evt.target !== void 0 ? 'green' : 'yellow');
+          // "Peeking at 'someKey' in 'someFile'."
           if (evt.requested) {
             L(M2C(this.msgs.beforePeek.msg[0], sty), evt.requested, evt.file);
           } else {
             L(M2C(this.msgs.beforePeek.msg[1], sty), evt.file);
           }
+          // If the key was present, print it
           if (evt.target !== void 0 && !evt.error) {
+            // eslint-disable-next-line no-console
             return console.dir(evt.target, {
               depth: null,
               colors: true
@@ -182,11 +179,11 @@ Output routines for HackMyResume.
             return L(chalk.red(evt.error.inner.inner));
           }
       }
-    };
+    }
 
-    return OutputHandler;
+  };
 
-  })();
+  module.exports = OutputHandler;
 
 }).call(this);
 

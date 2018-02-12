@@ -37,7 +37,7 @@ module.exports = class HtmlPdfCLIGenerator extends TemplateGenerator
     safe_eng = 'phantomjs' if safe_eng == 'phantom'
     if _.has engines, safe_eng
       @errHandler = info.opts.errHandler
-      engines[ safe_eng ].call @, info.mk, info.outputFile, @onError
+      engines[ safe_eng ].call @, info.mk, info.outputFile, info.opts, @onError
       return null # halt further processing
 
 
@@ -64,11 +64,17 @@ engines =
   TODO: If HTML generation has run, reuse that output
   TODO: Local web server to ease wkhtmltopdf rendering
   ###
-  wkhtmltopdf: (markup, fOut, on_error) ->
+  wkhtmltopdf: (markup, fOut, opts, on_error) ->
     # Save the markup to a temporary file
     tempFile = fOut.replace /\.pdf$/i, '.pdf.html'
     FS.writeFileSync tempFile, markup, 'utf8'
-    SPAWN 'wkhtmltopdf', [ tempFile, fOut ], false, on_error, @
+
+    # Prepare wkhtmltopdf arguments.
+    wkopts = _.extend 'margin-top': '10mm', 'margin-bottom': '10mm', opts.wkhtmltopdf
+    wkopts = _.flatten _.map wkopts, (v, k) -> ['--' + k, v]
+    wkargs = wkopts.concat [ tempFile, fOut  ]
+
+    SPAWN 'wkhtmltopdf', wkargs , false, on_error, @
     return
 
 
@@ -80,7 +86,7 @@ engines =
   TODO: If HTML generation has run, reuse that output
   TODO: Local web server to ease Phantom rendering
   ###
-  phantomjs: ( markup, fOut, on_error ) ->
+  phantomjs: ( markup, fOut, opts, on_error ) ->
     # Save the markup to a temporary file
     tempFile = fOut.replace /\.pdf$/i, '.pdf.html'
     FS.writeFileSync tempFile, markup, 'utf8'
@@ -89,4 +95,18 @@ engines =
     sourcePath = SLASH PATH.relative( process.cwd(), tempFile)
     destPath = SLASH PATH.relative( process.cwd(), fOut)
     SPAWN 'phantomjs', [ scriptPath, sourcePath, destPath ], false, on_error, @
+    return
+
+  ###*
+  Generate a PDF from HTML using WeasyPrint's CLI interface.
+  Spawns a child process with `weasyprint <source> <target>`. Weasy Print
+  must be installed and path-accessible.
+  TODO: If HTML generation has run, reuse that output
+  ###
+  weasyprint: ( markup, fOut, opts, on_error ) ->
+    # Save the markup to a temporary file
+    tempFile = fOut.replace /\.pdf$/i, '.pdf.html'
+    FS.writeFileSync tempFile, markup, 'utf8'
+
+    SPAWN 'weasyprint', [tempFile, fOut], false, on_error, @
     return

@@ -1,14 +1,8 @@
-###*
-Definition of the AbstractResume class.
-@license MIT. See LICENSE.md for details.
-@module core/abstract-resume
-###
-
+FluentDate = require '../core/fluent-date'
 _ = require 'underscore'
-__ = require 'lodash'
-FluentDate = require('./fluent-date')
+lo = require 'lodash'
 
-class AbstractResume
+module.exports =
 
   ###*
   Compute the total duration of the work history.
@@ -17,9 +11,9 @@ class AbstractResume
   *latest end date of all jobs in the work history*. This last condition is for
   sheets that have overlapping jobs.
   ###
-  duration: (collKey, startKey, endKey, unit) ->
+  run: (rez, collKey, startKey, endKey, unit) ->
     unit = unit || 'years'
-    hist = __.get @, collKey
+    hist = lo.get rez, collKey
     return 0 if !hist or !hist.length
 
     # BEGIN CODE DUPLICATION --> src/inspectors/gap-inspector.coffee (TODO)
@@ -49,5 +43,3 @@ class AbstractResume
     firstDate = _.first( new_e )[1];
     lastDate = _.last( new_e )[1];
     lastDate.diff firstDate, unit
-
-module.exports = AbstractResume

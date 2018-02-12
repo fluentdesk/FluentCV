@@ -47,7 +47,7 @@ Performed IT administration and deployments for Dunder Mifflin.
 
 ## PROJECTS
 
-### *Contributor*, [HackMyResume](http://please.hackmyresume.com) (2015-09 — Present)
+### *Contributor*, [HackMyResume](https://fluentdesk.com/hackmyresume) (2015-09 — Present)
 
 A resume authoring and analysis tool for OS X, Linux, and Windows.
 Exemplar user for HackMyResume and FluentCV!
@@ -179,12 +179,6 @@ Summary of this military stint.
 
   - Won 'Best Presentation on an Emerging Technical Field' prize.
 
-
-## REFERENCES
-
-### *John Davidson*
-Mobile: 9-(999)-999-9999
-Work email: jdavidson@veridiandynamics.com
 
 
 ## INTERESTS

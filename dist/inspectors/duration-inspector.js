@@ -1,23 +1,13 @@
-
-/**
-Definition of the AbstractResume class.
-@license MIT. See LICENSE.md for details.
-@module core/abstract-resume
- */
-
 (function() {
-  var AbstractResume, FluentDate, _, __;
+  var FluentDate, _, lo;
+
+  FluentDate = require('../core/fluent-date');
 
   _ = require('underscore');
 
-  __ = require('lodash');
+  lo = require('lodash');
 
-  FluentDate = require('./fluent-date');
-
-  AbstractResume = (function() {
-    function AbstractResume() {}
-
-
+  module.exports = {
     /**
     Compute the total duration of the work history.
     @returns The total duration of the sheet's work history, that is, the number
@@ -25,18 +15,23 @@ Definition of the AbstractResume class.
     *latest end date of all jobs in the work history*. This last condition is for
     sheets that have overlapping jobs.
      */
-
-    AbstractResume.prototype.duration = function(collKey, startKey, endKey, unit) {
+    run: function(rez, collKey, startKey, endKey, unit) {
       var firstDate, hist, lastDate, new_e;
       unit = unit || 'years';
-      hist = __.get(this, collKey);
+      hist = lo.get(rez, collKey);
       if (!hist || !hist.length) {
         return 0;
       }
+      // BEGIN CODE DUPLICATION --> src/inspectors/gap-inspector.coffee (TODO)
+
+      // Convert the candidate's employment history to an array of dates,
+      // where each element in the array is a start date or an end date of a
+      // job -- it doesn't matter which.
       new_e = hist.map(function(job) {
         var obj;
         obj = _.pick(job, [startKey, endKey]);
         if (!_.has(obj, endKey)) {
+          // Synthesize an end date if this is a "current" gig
           obj[endKey] = 'current';
         }
         if (obj && (obj[startKey] || obj[endKey])) {
@@ -48,6 +43,7 @@ Definition of the AbstractResume class.
         }
         return obj;
       });
+      // Flatten the array, remove empties, and sort
       new_e = _.filter(_.flatten(new_e, true), function(v) {
         return v && v.length && v[0] && v[0].length;
       });
@@ -57,17 +53,13 @@ Definition of the AbstractResume class.
       new_e = _.sortBy(new_e, function(elem) {
         return elem[1].unix();
       });
+      // END CODE DUPLICATION
       firstDate = _.first(new_e)[1];
       lastDate = _.last(new_e)[1];
       return lastDate.diff(firstDate, unit);
-    };
-
-    return AbstractResume;
-
-  })();
-
-  module.exports = AbstractResume;
+    }
+  };
 
 }).call(this);
 
-//# sourceMappingURL=abstract-resume.js.map
+//# sourceMappingURL=duration-inspector.js.map

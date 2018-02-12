@@ -1,12 +1,10 @@
-
-/**
-Definition of the JRSTheme class.
-@module core/jrs-theme
-@license MIT. See LICENSE.MD for details.
- */
-
 (function() {
-  var JRSTheme, PATH, _, parsePath, pathExists;
+  /**
+  Definition of the JRSTheme class.
+  @module core/jrs-theme
+  @license MIT. See LICENSE.MD for details.
+  */
+  var JRSTheme, PATH, _, errors, parsePath, pathExists;
 
   _ = require('underscore');
 
@@ -16,32 +14,32 @@ Definition of the JRSTheme class.
 
   pathExists = require('path-exists').sync;
 
+  errors = require('./status-codes');
 
   /**
   The JRSTheme class is a representation of a JSON Resume theme asset.
   @class JRSTheme
-   */
-
-  JRSTheme = (function() {
-    function JRSTheme() {}
-
-
+  */
+  JRSTheme = class JRSTheme {
     /**
-    Open and parse the specified theme.
+    Open and parse the specified JRS theme.
     @method open
-     */
-
-    JRSTheme.prototype.open = function(thFolder) {
+    */
+    open(thFolder) {
       var pathInfo, pkgJsonPath, thApi, thPkg;
       this.folder = thFolder;
       pathInfo = parsePath(thFolder);
+      // Open and parse the theme's package.json file
       pkgJsonPath = PATH.join(thFolder, 'package.json');
       if (pathExists(pkgJsonPath)) {
-        thApi = require(thFolder);
-        thPkg = require(pkgJsonPath);
+        thApi = require(thFolder); // Requiring the folder yields whatever the package.json's "main" is set to
+        thPkg = require(pkgJsonPath); // Get the package.json as JSON
         this.name = thPkg.name;
         this.render = (thApi && thApi.render) || void 0;
         this.engine = 'jrs';
+        // Create theme formats (HTML and PDF). Just add the bare minimum mix of
+        // properties necessary to allow JSON Resume themes to share a rendering
+        // path with FRESH themes.
         this.formats = {
           html: {
             outFormat: 'html',
@@ -70,35 +68,29 @@ Definition of the JRSTheme class.
         };
       } else {
         throw {
-          fluenterror: HACKMYSTATUS.missingPackageJSON
+          fluenterror: errors.missingPackageJSON
         };
       }
       return this;
-    };
-
+    }
 
     /**
     Determine if the theme supports the output format.
     @method hasFormat
-     */
-
-    JRSTheme.prototype.hasFormat = function(fmt) {
+    */
+    hasFormat(fmt) {
       return _.has(this.formats, fmt);
-    };
-
+    }
 
     /**
     Return the requested output format.
     @method getFormat
-     */
-
-    JRSTheme.prototype.getFormat = function(fmt) {
+    */
+    getFormat(fmt) {
       return this.formats[fmt];
-    };
+    }
 
-    return JRSTheme;
-
-  })();
+  };
 
   module.exports = JRSTheme;
 
