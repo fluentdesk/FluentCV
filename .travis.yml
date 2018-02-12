@@ -4,7 +4,7 @@ before_install:
   # platforms (e.g., vanilla Ubuntu 16.04 LTS). Not necessary on current Travis.
   # - sudo apt-get install libxrender1
 install:
-  # Install & link HackMyResume
+  # Install & link FluentCV
   - npm install && npm link
   # Download and extract the latest wkhtmltopdf binaries
   - mkdir tmp && wget https://github.com/wkhtmltopdf/wkhtmltopdf/releases/download/0.12.4/wkhtmltox-0.12.4_linux-generic-amd64.tar.xz -O tmp/wk.tar.xz
